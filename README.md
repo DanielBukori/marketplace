@@ -214,11 +214,19 @@ kwenye `.env.local` hakuna kitu kinachoisoma, na Supabase haiangalii faili hiyo 
 Maamuzi ya mailer (host/port/login/password) na maandishi ya barua pepe (template) viko
 **dashboard ya Supabase** pekee, sehemu (f) na (h).
 
-### h) Kuingia kwa namba 6 (OTP) — kwa wanaosoma barua pepe kwenye simu
+**Na API ya Brevo haitusaidii hapa.** `POST /v3/emailCampaigns` hutuma *kampeni za masoko*
+kwenye orodha za wawasiliano (`recipients.listIds`) kwa ratiba (`scheduledAt`); barua pepe
+za kuingia ni za **mtu mmoja, kwa wakati mmoja, ikiwa na OTP mpya**, kwa hivyo zinaenda
+njia ya `POST /v3/smtp/email` — na ile hutumiwa na Supabase, ambayo huongea na Brevo kupitia
+**SMTP** (host/port/username/password), si kupitia funguo la API. Kwa hivyo funguo la API ya
+Brevo halina mahali pa kuenda katika mfumo huu isipokuwa tutakapotuma barua pepe zetu
+mwenyewe (mf. risiti za oda).
+
+### h) Kuingia kwa namba ya OTP — kwa wanaosoma barua pepe kwenye simu
 
 Kiungo cha magic link hufanya kazi tu kwenye browser ileile iliyoomba (cookies za PKCE) —
 kwa mtu anayefungua barua pepe kwenye simu, `localhost` haionekani. Kwa hivyo `/login`
-ina pia kisanduku cha **namba ya OTP**: Supabase hutuma namba 6, mtumiaji haiandika kwenye
+ina pia kisanduku cha **namba ya OTP**: Supabase hutuma namba 6 au 8 (kulingana na mradi), mtumiaji haiandika kwenye
 kompyuta, na `verifyOtp({ email, token, type: "email" })` hufungua session moja kwa moja
 (bila kubofya kiungo).
 
@@ -255,7 +263,7 @@ inayohitaji. (Tofauti na `SNIPPE_API_KEY`, ambayo iko `.env.local` kwa sababu se
 ndiyo inaiita Snippe.)
 
 **Jaribio:** fungua `/login` → *Ingia au jisajili kwa barua pepe* → tuma → kisha **au**
-ubofye kiungo kwenye browser ileile, **au** uandike namba 6 ulizopata kwenye barua pepe.
+ubofye kiungo kwenye browser ileile, **au** uandike namba ulizopata kwenye barua pepe.
 Kwa njia ya namba unapaswa kuondoka `/login` ukafika `next` yako (mf. `/post`). Kosa
 lolote linalojulikana — kikomo cha barua pepe, redirect isiyoruhusiwa, browser tofauti
 (PKCE), namba isiyo sahihi/iliyoyisha muda, usajili uliozimwa — hupatikana kwa Kiswahili/EN
@@ -446,7 +454,9 @@ unaonyesha tu kilichopo kwenye hifadhidata.
 | `email rate limit exceeded` (unapotuma kiungo) | Mailer ya default ya Supabase ina kikomo kidogo (takriban 2 barua pepe kwa saa kwa mradi) | Weka Brevo SMTP kama hatua (f) inavyoonyesha, kisha uombe kiungo upya |
 | Brevo: `535 authentication failed` baada ya Save | Uliweka **API key** kwenye Password badala ya **SMTP key**, au ulitumia `smtp-relay.brevo.com` kama Username badala ya **Login** | Ona hatua (f) → "Makosa mawili ya Brevo"; tengeneza SMTP key mpya |
 | Brevo: `550 Domain is not verified` | Sender Email iko kwenye domeini ambayo huna (mf. `@gmail.com`) au haijathibitishwa | Thibitisha domeini yako kwenye Brevo, au tumia Gmail app password kama hatua (f) → "Ukiwa huna domeini" |
-| `PKCE code verifier not found in storage` | Kiungo kilifunguliwa kwenye browser/device tofauti na ile iliyoomba, au cookies za `localhost` zimefutwa | Tumia njia ya **namba 6 (OTP)** — hatua (h) — au fungua kiungo kwenye browser ileile uliyotumia `/login` |
+| `PKCE code verifier not found in storage` | Kiungo kilifunguliwa kwenye browser/device tofauti na ile iliyoomba, au cookies za `localhost` zimefutwa | Tumia njia ya **namba ya OTP** — hatua (h) — au fungua kiungo kwenye browser ileile uliyotumia `/login` |
+| Namba za OTP zinaonekana **8** lakini kisanduku kilikataa | Supabase hutuma namba 6 au 8 kulingana na mpangilio wa mradi (`OTP_LENGTH`); kisanduku chetu huruhusu 6 hadi 8 | Andika namba zote ulizopata kwenye barua pepe — kitufe cha "Thibitisha" huwasha tikakamilisha namba 6 au zaidi |
+| `WebCrypto API is not supported. Code challenge method will default to use plain instead of sha256` (browser) | Unafungua tovuti kutoka anwani isiyo secure — `crypto.subtle` haipatikani nje ya `https://` na `http://localhost`/`127.0.0.1`, mf. `http://192.168.x.x:3000` | Onjoro tu, si kosa: kiungo bado kitafanya kazi (kwenye browser ileile). Ukipenda kuona safi, tumia `http://localhost:3000`, au upatie HTTPS kwa simu (tunnel ya mf. `cloudflared`) na usasishe `NEXT_PUBLIC_SITE_URL`. **Njia ya namba ya OTP haiathiriwi** — `verifyOtp` haitumii PKCE, kwa hivyo hufungua session kwenye browser yoyote |
 | `supabase.auth.signInWithOauth is not a function` (browser) | Kibadili-haraka (Fast Refresh) kiliacha bundle ya zamani baada ya mabadiliko ya `translations.ts` | Pakia upya kwa nguvu: `Shift+F5` kwenye `/login` |
 
 Ukosa wowote wa hifadhidata huonyeshwa na `src/app/error.tsx`: ujumbe wa kweli (SW/EN)

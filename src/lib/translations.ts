@@ -451,6 +451,7 @@ const sw = {
     sending: "Inatuma…",
     backToOptions: "Rudi kwenye chaguzi",
     linkErrorTitle: "Kiungo hicho hakikufanya kazi",
+    providerErrorTitle: "Google haikukamilisha kuingia",
     linkErrorBody:
       "Kila kiungo cha kuingia hutumika mara moja tu na huisha baada ya dakika chache. Tuma kipya badala ya kutumia barua pepe ya zamani.",
     errRateLimit:
@@ -462,15 +463,19 @@ const sw = {
     errSignupDisabled:
       "Usajili umezimwa kwenye mradi huu. Supabase → Authentication → Sign In / Providers → washia 'Allow new users'.",
     errToken: "Namba hiyo si sahihi au imeisha muda wake. Tuma namba mpya kisha uiandike mara moja.",
+    errSmtp:
+      "Supabase ilishindwa kutuma barua pepe kupitia mailer yake. Angalia Supabase → Authentication → SMTP Settings: Brevo anahitaji **SMTP key** (si API key) na Username ya Brevo (si hostname), na Sender lazima iwe kwenye domeini uliyothibitisha — README hatua (f).",
+    errGoogle:
+      "Google ilikataa kubadilishana code na Supabase. Kwenye Google Cloud → Google Auth Platform: (1) OAuth client iwe **Web application**, (2) `https://<project-ref>.supabase.co/auth/v1/callback` iwe kwenye **Authorized redirect URIs**, (3) Client ID na Secret kwenye Supabase viwe vilevile, (4) consent screen iwe **Published** (si Testing). Sababu kamili huonekana kwenye Supabase → Authentication → Logs.",
     codeIntro:
-      "Unasoma barua pepe kwenye simu? Andika namba 6 iliyo ndani yake hapa — huhitaji kufungua kiungo.",
+      "Unasoma barua pepe kwenye simu? Andika namba iliyo ndani yake hapa (namba 6 au 8, kulingana na Supabase yako) — huhitaji kufungua kiungo.",
     codeLabel: "Namba ya OTP",
-    codePlaceholder: "123456",
+    codePlaceholder: "12345678",
     codeVerify: "Thibitisha namba",
     codeVerifying: "Inathibitisha…",
     sentTitle: "Tumetuma barua pepe",
     sentBody:
-      "Tumetuma kiungo na namba ya OTP kwa {email}. Fungua kiungo kwenye browser hii, au andika namba 6 hapa chini.",
+      "Tumetuma kiungo na namba ya OTP kwa {email}. Fungua kiungo kwenye browser hii, au andika namba hiyo hapa chini.",
     sentOther: "Tumia anwani nyingine",
     agreement:
       "Kwa kuendelea unakubali masharti ya matumizi na sera ya faragha ya IAA Marketplace.",
@@ -1125,6 +1130,7 @@ const en: Dict = {
     sending: "Sending…",
     backToOptions: "Back to options",
     linkErrorTitle: "That link did not work",
+    providerErrorTitle: "Google did not finish signing you in",
     linkErrorBody:
       "Each sign-in link can be used once and expires after a few minutes. Request a new one instead of reopening the old email.",
     errRateLimit:
@@ -1136,15 +1142,19 @@ const en: Dict = {
     errSignupDisabled:
       "Sign-ups are switched off for this project. Supabase → Authentication → turn off 'Disable sign-ups'.",
     errToken: "That code is wrong or has expired. Request a new code and enter it right away.",
+    errSmtp:
+      "Supabase could not send the email through its mailer. Check Supabase → Authentication → SMTP Settings: Brevo needs the **SMTP key** (not the API key) and the Brevo Login (not the hostname), and the Sender must sit on a domain you verified — README step (f).",
+    errGoogle:
+      "Google refused to exchange the code with Supabase. In Google Cloud → Google Auth Platform: (1) the OAuth client must be a **Web application**, (2) `https://<project-ref>.supabase.co/auth/v1/callback` must be listed under **Authorized redirect URIs**, (3) the Client ID and Secret in Supabase must match exactly, (4) the consent screen must be **Published** (not Testing). The precise reason shows in Supabase → Authentication → Logs.",
     codeIntro:
-      "Reading the email on your phone? Type the 6-digit code from it here — no need to open the link.",
+      "Reading the email on your phone? Type the code from it here (6 or 8 digits, depending on your Supabase project) — no need to open the link.",
     codeLabel: "OTP code",
-    codePlaceholder: "123456",
+    codePlaceholder: "12345678",
     codeVerify: "Verify the code",
     codeVerifying: "Verifying…",
     sentTitle: "We sent you an email",
     sentBody:
-      "We sent a link and a 6-digit code to {email}. Open the link in this browser, or type the code below.",
+      "We sent a link and an OTP code to {email}. Open the link in this browser, or type the code below.",
     sentOther: "Use another address",
     agreement:
       "By continuing you accept the IAA Marketplace terms of service and privacy policy.",

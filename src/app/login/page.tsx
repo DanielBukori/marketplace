@@ -119,6 +119,8 @@ export default function LoginPage() {
   // Supabase hutoa ujumbe wa Kiingereza; hii huongeza hatua halisi ya Kiswahili/EN.
   function hintFor(raw: string) {
     const text = raw.toLowerCase();
+    if (text.includes("exchange external code")) return t.auth.errGoogle;
+    if (text.includes("error sending magic link") || text.includes("smtp")) return t.auth.errSmtp;
     if (text.includes("rate limit")) return t.auth.errRateLimit;
     if (text.includes("code verifier") || text.includes("pkce")) return t.auth.errPkce;
     if (text.includes("token")) return t.auth.errToken;
@@ -251,10 +253,10 @@ export default function LoginPage() {
                 <input
                   id="code"
                   value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
                   inputMode="numeric"
                   autoComplete="one-time-code"
-                  maxLength={6}
+                  maxLength={8}
                   placeholder={t.auth.codePlaceholder}
                   className="field text-center font-display text-xl font-bold tracking-[0.45em]"
                 />
@@ -272,7 +274,7 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  disabled={busy || code.length !== 6}
+                  disabled={busy || code.length < 6}
                   className="w-full rounded-2xl bg-primary-600 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-700 disabled:opacity-50"
                 >
                   {busy ? t.auth.codeVerifying : t.auth.codeVerify}
@@ -295,7 +297,11 @@ export default function LoginPage() {
             <div className="space-y-3">
               {linkError && !linkErrorHidden && (
                 <div className="rounded-2xl border border-accent-100 bg-accent-100/60 px-4 py-3">
-                  <p className="text-sm font-bold text-accent-600">{t.auth.linkErrorTitle}</p>
+                  <p className="text-sm font-bold text-accent-600">
+                    {hintFor(linkError) === t.auth.errGoogle
+                      ? t.auth.providerErrorTitle
+                      : t.auth.linkErrorTitle}
+                  </p>
                   <p className="mt-1 text-xs leading-relaxed text-accent-600">
                     {hintFor(linkError) ?? t.auth.linkErrorBody}
                   </p>
