@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import {
   ArrowLeft,
+  BadgeCheck,
   ChevronRight,
   Clock,
   MapPin,
@@ -18,6 +19,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { fill } from "@/lib/i18n";
 import { formatTzsShort, menuSlotIds } from "@/lib/data";
 import { mediaUrl } from "@/lib/media";
+import BusinessLogo from "@/components/BusinessLogo";
 import type { Business, MenuItem } from "@/lib/types";
 
 const stepIcons = [UtensilsCrossed, Smartphone, Bike];
@@ -295,25 +297,38 @@ function MenuCard({ item, slug }: { item: MenuItem; slug?: string }) {
 }
 
 function VendorCard({ business }: { business: Business }) {
-  const logo = mediaUrl(business.logo_path);
+  const { t } = useLanguage();
 
   return (
     <Link
       href={`/msosi/${business.slug}`}
       className="flex items-center gap-4 rounded-[26px] border border-black/5 bg-white p-5 shadow-[0_14px_34px_-28px_rgba(16,24,40,0.8)] transition hover:-translate-y-0.5 hover:border-primary-200"
     >
-      <span className="tile flex h-16 w-16 shrink-0 overflow-hidden rounded-2xl">
-        {logo ? (
-          <Image src={logo} alt={business.name} fill sizes="64px" className="object-cover" />
-        ) : (
-          <Store aria-hidden size={26} className="text-primary-200" />
-        )}
-      </span>
+      <BusinessLogo name={business.name} logoPath={business.logo_path} />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[17px] font-extrabold text-ink-900">
-          {business.name}
+        <span className="flex items-center gap-2">
+          <span className="truncate text-[17px] font-extrabold text-ink-900">
+            {business.name}
+          </span>
+          {business.is_verified && (
+            <span
+              title={t.product.sellerVerified}
+              className="flex shrink-0 items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-bold text-primary-700"
+            >
+              <BadgeCheck aria-hidden size={13} />
+              {t.msosi.verifiedShort}
+            </span>
+          )}
         </span>
-        <span className="mt-0.5 flex items-center gap-1.5 truncate text-sm text-gray-500">
+        <span className="mt-1 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-primary-600">
+          {business.kind === "food" ? t.msosi.kindFood : t.msosi.kindGoods}
+          {business.delivery_fee > 0 && (
+            <span className="font-medium normal-case tracking-normal text-gray-500">
+              · {fill(t.msosi.feeShort, { fee: formatTzsShort(business.delivery_fee) })}
+            </span>
+          )}
+        </span>
+        <span className="mt-1.5 flex items-center gap-1.5 truncate text-sm text-gray-500">
           <MapPin size={13} className="shrink-0" />
           {business.location ?? "—"}
         </span>

@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/media";
 
 const MAX_QUANTITY = 20;
+const MAX_LEAD_MS = 14 * 24 * 60 * 60 * 1000;
+const CLOCK_SLACK_MS = 5 * 60 * 1000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function POST(request: NextRequest) {
@@ -65,20 +67,53 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Mnunuzi huomba saa, lakini muda halisi unakaguliwa hapa: hauwezi
+  // kuwa uliopita wala mbali mno ili muuzi ashindwe na oda ya kubahatisha.
+  let scheduledAt: string | null = null;
+  const rawScheduled = body.scheduledAt;
+  if (rawScheduled !== null && rawScheduled !== undefined && rawScheduled !== "") {
+    const wanted = Date.parse(String(rawScheduled));
+    if (Number.isNaN(wanted)) {
+      return NextResponse.json(
+        { message: "Muda uliouchagua haomasomiki." },
+        { status: 400 },
+      );
+    }
+    const now = Date.now();
+    if (wanted < now - CLOCK_SLACK_MS) {
+      return NextResponse.json(
+        { message: "Chagua muda ujaokuja, si uliopita." },
+        { status: 400 },
+      );
+    }
+    if (wanted > now + MAX_LEAD_MS) {
+      return NextResponse.json(
+        { message: "Usizidi wiki mbili mbele." },
+        { status: 400 },
+      );
+    }
+    scheduledAt = new Date(wanted).toISOString();
+  }
+
   // Bei, jina na jumla huhukumiwa na triggers za hifadhidata, hivyo thamani
   // zilizotumwa na kivinjari hazwezi kubadilisha kile kinachoandikwa.
+  // `scheduled_at` huongezwa tu ikiwa mnunuzi aliomba saa — hivyo kutuma null
+  // kwa miradi ambayo safu bado haijaongezwa kushindisha oda zote.
+  const newOrder: Record<string, unknown> = {
+    buyer_id: user.id,
+    business_id: businessId,
+    status: "pending",
+    payment_status: "unpaid",
+    delivery_method: deliveryMethod,
+    contact_phone: contactPhone,
+    delivery_address: deliveryAddress.trim(),
+    note: note.trim(),
+  };
+  if (scheduledAt) newOrder.scheduled_at = scheduledAt;
+
   const { data: order, error: orderError } = await supabase
     .from("orders")
-    .insert({
-      buyer_id: user.id,
-      business_id: businessId,
-      status: "pending",
-      payment_status: "unpaid",
-      delivery_method: deliveryMethod,
-      contact_phone: contactPhone,
-      delivery_address: deliveryAddress.trim(),
-      note: note.trim(),
-    })
+    .insert(newOrder)
     .select("id, reference")
     .single();
 

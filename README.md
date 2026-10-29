@@ -305,6 +305,10 @@ kwenye kadi, pamoja na ujumbe halisi wa Supabase chini yake; tengenezo liko kati
    (`media/<namba-yako>/…`): JPG, PNG au WebP, hadi 5MB kwa picha.
 5. Muuzi hubadilisha hatua za oda (`pending → confirmed → preparing → ready →
    completed`) kwenye `/dashboard/orders`.
+6. Oda za **chakula** tu ndizo zinazoomba saa: kwenye `/checkout` mnunuzi huchagua
+   "Haraka — sasa hivi" (`scheduled_at` inabaki `NULL`) au "Chagua saa"
+   (`orders.scheduled_at`). Seva hukataa muda uliopita au uliozidi wiki mbili mbele,
+   na muuzi huona kile ambacho mnunuzi aliomba kwenye `/dashboard/orders`.
 
 ### Pesa: kutoka kwa mnunuzi hadi kwa muuzi (Snippe)
 
@@ -442,6 +446,7 @@ unaonyesha tu kilichopo kwenye hifadhidata.
 | --- | --- | --- |
 | `Invalid API key` / `Double check your Supabase anon or service_role API key` | Fungo si la mradi huo, limeharibika, au lina nafasi/ziada | Nakili upya kutoka Project Settings → API; hakikisha `KEY=thamani` bila nafasi; hakikisha URL na fungo ni za mradi mmoja |
 | `Could not find the table 'public.businesses'` (`PGRST205`) | Fungo ni sahihi, lakini schema haijatumika bado | Endesha `supabase/schema.sql` katika SQL Editor |
+| `Could not find the 'scheduled_at' column of 'orders' in the schema cache` | Oda iliona **Chagua saa**, lakini mradi wako una jedwali la zamani | SQL Editor: `alter table public.orders add column if not exists scheduled_at timestamptz;` |
 | `Bucket not found` (`media`) | Schema haijatumika, au kikapu kimefutwa | Schema huunda kikapu `media` (public) |
 | Kurasa zinaonyesha `SetupNotice` | `.env.local` haipo, au `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` ni tupu | Jaza fungo, kisha uwashe upya `npm run dev` |
 | Magic link haifiki au hurejesha kosa | Redirect URL haijaruhusiwa, au kikomo cha barua pepe za default cha Supabase kimefikwa | Ongeza `/auth/callback` kwenye Redirect URLs; weka SMTP yako (Auth → SMTP) |

@@ -119,6 +119,14 @@ export default function OrdersInbox({
                 : t.orders.pickup}
               {order.contact_phone && ` · ${order.contact_phone}`}
             </p>
+            {order.kind === "food" && (
+              <p className="text-gray-500">
+                {t.orders.whenLabel}:{" "}
+                {order.scheduled_at
+                  ? new Date(order.scheduled_at).toLocaleString("sw-TZ")
+                  : t.orders.whenAsap}
+              </p>
+            )}
 
             {canManage ? (
               <select

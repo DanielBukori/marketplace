@@ -4,8 +4,11 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import { fill } from "@/lib/i18n";
 import { formatTzs } from "@/lib/data";
 import { mediaUrl } from "@/lib/media";
+
+const MAX_LEAD_MS = 14 * 24 * 60 * 60 * 1000;
 
 export type CheckoutLine = {
   key: string;
@@ -36,6 +39,9 @@ export default function CheckoutForm({
   const [phone, setPhone] = useState(contact.phone);
   const [address, setAddress] = useState("");
   const [note, setNote] = useState("");
+  const [when, setWhen] = useState<"asap" | "scheduled">("asap");
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [whenError, setWhenError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,10 +49,37 @@ export default function CheckoutForm({
   const fee = deliveryMethod === "delivery" ? deliveryFee : 0;
   const total = itemsTotal + fee;
 
+  // Chakula ndicho kinachohitaji kuchagua saa; bidhaa zinakusanywa tu.
+  const isFood = lines.some((line) => Boolean(line.menuItemId));
+  const scheduledMs = scheduledAt ? Date.parse(scheduledAt) : null;
+  const scheduledOk = scheduledMs !== null && !Number.isNaN(scheduledMs);
+
+  // Ulinganisho wa saa hufanyika wakati wa kubadilisha, si wakati wa
+  // kuchora, kwa sababu `Date.now()` si safi kwa React.
+  function pickTime(value: string) {
+    setScheduledAt(value);
+    setWhenError(null);
+    if (!value) return;
+    const ms = Date.parse(value);
+    if (Number.isNaN(ms)) {
+      setWhenError(t.checkout.whenInvalid);
+      return;
+    }
+    const now = Date.now();
+    if (ms < now - 60_000) setWhenError(t.checkout.whenTooEarly);
+    else if (ms > now + MAX_LEAD_MS) setWhenError(t.checkout.whenTooLate);
+  }
+
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
+
+    if (isFood && when === "scheduled" && (!scheduledOk || whenError)) {
+      setError(whenError ?? t.checkout.whenInvalid);
+      setBusy(false);
+      return;
+    }
 
     try {
       const response = await fetch("/api/orders", {
@@ -63,6 +96,10 @@ export default function CheckoutForm({
           contactPhone: phone,
           deliveryAddress: address,
           note,
+          scheduledAt:
+            isFood && when === "scheduled" && scheduledOk
+              ? new Date(scheduledMs as number).toISOString()
+              : null,
         }),
       });
 
@@ -127,6 +164,59 @@ export default function CheckoutForm({
           <span>{formatTzs(total)}</span>
         </div>
       </div>
+
+      {isFood && (
+        <fieldset className="space-y-3">
+          <legend className="text-sm font-bold text-ink-900">{t.checkout.whenTitle}</legend>
+          <div className="flex gap-3">
+            {(
+              [
+                { value: "asap", label: t.checkout.whenAsap },
+                { value: "scheduled", label: t.checkout.whenPick },
+              ] as const
+            ).map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setWhen(option.value)}
+                aria-pressed={when === option.value}
+                className={`flex-1 rounded-2xl border px-4 py-3 text-sm font-bold transition ${
+                  when === option.value
+                    ? "border-primary-800 bg-primary-800 text-white"
+                    : "border-gray-200 bg-white text-gray-600 hover:border-primary-200"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+
+          {when === "scheduled" ? (
+            <>
+              <input
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(e) => pickTime(e.target.value)}
+                required
+                className="field"
+              />
+              <p
+                className={`text-xs leading-relaxed ${
+                  whenError ? "text-accent-600" : "text-gray-500"
+                }`}
+              >
+                {scheduledAt === "" || whenError
+                  ? (whenError ?? t.checkout.whenHint)
+                  : fill(t.checkout.whenSelected, {
+                      when: new Date(scheduledMs as number).toLocaleString("sw-TZ"),
+                    })}
+              </p>
+            </>
+          ) : (
+            <p className="text-xs leading-relaxed text-gray-500">{t.checkout.whenAsapHint}</p>
+          )}
+        </fieldset>
+      )}
 
       <fieldset className="space-y-3">
         <legend className="text-sm font-bold text-ink-900">{t.checkout.deliveryMethod}</legend>

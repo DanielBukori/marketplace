@@ -126,6 +126,7 @@ export type Order = {
   contact_phone: string;
   delivery_address: string;
   note: string;
+  scheduled_at: string | null;
   created_at: string;
   completed_at: string | null;
   business?: Pick<Business, "id" | "name" | "slug">;

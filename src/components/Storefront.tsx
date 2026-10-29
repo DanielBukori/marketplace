@@ -2,11 +2,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowLeft, Clock, MapPin, Minus, Plus, ShoppingBag } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Clock, MapPin, Minus, Plus } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { fill } from "@/lib/i18n";
 import { formatTzs } from "@/lib/data";
 import { mediaUrl } from "@/lib/media";
+import BusinessLogo from "@/components/BusinessLogo";
 import type { Business, Listing, MenuItem } from "@/lib/types";
 
 export default function Storefront({
@@ -35,6 +36,7 @@ export default function Storefront({
   const itemsTotal = lines.reduce((sum, l) => sum + l.item.price * l.qty, 0);
   const fee = business.delivery_fee;
   const total = itemsTotal + (lines.length > 0 ? fee : 0);
+  const cover = mediaUrl(business.cover_path);
 
   function step(id: string, delta: number) {
     setCart((current) => {
@@ -71,24 +73,40 @@ export default function Storefront({
             <ArrowLeft size={16} /> {t.storefront.backToVendors}
           </Link>
 
+          {cover && (
+            <div className="relative mt-6 h-40 w-full overflow-hidden rounded-[26px] sm:h-52">
+              <Image
+                src={cover}
+                alt=""
+                fill
+                sizes="(max-width: 1024px) 100vw, 1024px"
+                className="object-cover"
+                priority
+              />
+            </div>
+          )}
+
           <div className="mt-6 flex items-start gap-5">
-            <span className="tile relative h-20 w-20 shrink-0 rounded-2xl">
-              {business.logo_path ? (
-                <Image
-                  src={mediaUrl(business.logo_path) ?? ""}
-                  alt={business.name}
-                  fill
-                  sizes="80px"
-                  className="object-cover"
-                />
-              ) : (
-                <ShoppingBag aria-hidden size={28} className="text-primary-200" />
-              )}
-            </span>
+            <BusinessLogo
+              name={business.name}
+              logoPath={business.logo_path}
+              className="h-20 w-20"
+              sizes="80px"
+              textClass="text-xl"
+            />
 
             <div>
-              <h1 className="text-3xl font-extrabold tracking-tight text-ink-900">
+              <h1 className="flex flex-wrap items-center gap-2 text-3xl font-extrabold tracking-tight text-ink-900">
                 {business.name}
+                {business.is_verified && (
+                  <span
+                    title={t.product.sellerVerified}
+                    className="flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-primary-700"
+                  >
+                    <BadgeCheck aria-hidden size={14} />
+                    {t.msosi.verifiedShort}
+                  </span>
+                )}
               </h1>
               <div className="mt-2 space-y-1 text-[15px] text-gray-500">
                 {business.location && (

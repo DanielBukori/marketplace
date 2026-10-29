@@ -190,10 +190,15 @@ create table if not exists public.orders (
   contact_phone text not null default '',
   delivery_address text not null default '',
   note text not null default '',
+  -- Wakati mnunuzi anapotaka chakula iandaliwe. NULL = "andaa sasa hivi".
+  scheduled_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   completed_at timestamptz
 );
+
+-- Miradi iliyopo tayari hapo awali haitenganishi na safu hii mpya.
+alter table public.orders add column if not exists scheduled_at timestamptz;
 
 create unique index if not exists orders_reference_key on public.orders (reference);
 create index if not exists orders_buyer_idx on public.orders (buyer_id, created_at desc);

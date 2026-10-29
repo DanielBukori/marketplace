@@ -155,6 +155,14 @@ export default function OrderDetail({
               : t.orders.pickup}
           </p>
           {order.note && <p>{t.orders.note}: {order.note}</p>}
+          {order.kind === "food" && (
+            <p>
+              {t.orders.whenLabel}:{" "}
+              {order.scheduled_at
+                ? new Date(order.scheduled_at).toLocaleString("sw-TZ")
+                : t.orders.whenAsap}
+            </p>
+          )}
           <p>
             {t.orders.placedOn}: {new Date(order.created_at).toLocaleString("sw-TZ")}
           </p>
