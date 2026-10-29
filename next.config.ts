@@ -1,6 +1,5 @@
 import type { NextConfig } from "next";
 
-<<<<<<< HEAD
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
 /**
@@ -31,16 +30,6 @@ const nextConfig: NextConfig = {
   },
   turbopack: {
     root: process.cwd(),
-=======
-const nextConfig: NextConfig = {
-  /* config options here */
-  experimental: {
-    agentFeedback: true,
-  },
-  cacheComponents: true,
-  partialPrefetching: true,
-  turbopack: {
->>>>>>> 536dff15f01241bf4fc290a6a3f069ac97241f84
     rules: {
       "*.css": {
         loaders: ["@tailwindcss/turbopack"],
