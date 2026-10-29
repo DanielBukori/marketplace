@@ -1,26 +1,121 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/**
+ * next/font huweka vivala (`--font-body`, `--font-heading`) kwenye <body>.
+ * `@theme inline` humaaisha thamani hiyo mahali pa matumizi, kwa hivyo
+ * `font-sans` hutumia fonti iliyopakeliwa — si jina la maandishi tu.
+ */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-heading), var(--font-body), ui-sans-serif, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@theme {
+  /* Mwendo wa hero slideshow. @keyframes lazima ziwe NDANI ya @theme:
+     nje yake, mfupulizi wa CSS huchukulia ni zisizotumika (jina linaitwa
+     kupitia `var(--animate-…)`) na huaziondosa kabisa. */
+  --animate-kenburns: kenburns 9s ease-out both;
+  --animate-pop-in: pop-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-rise: rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes kenburns {
+    from {
+      transform: scale(1.04) translate3d(0, 0, 0);
+    }
+    to {
+      transform: scale(1.14) translate3d(-1.5%, -1%, 0);
+    }
+  }
+
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 14px, 0) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 18px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  /* IAA Arusha — official blue */
+  --color-primary-50: #eef4fa;
+  --color-primary-100: #d8e6f3;
+  --color-primary-200: #b0cbe6;
+  --color-primary-400: #4a7fb0;
+  --color-primary-500: #2a6497;
+  --color-primary-600: #10497e;
+  --color-primary-700: #0d3c67;
+  --color-primary-800: #0a2f50;
+  --color-primary-900: #07233c;
+
+  /* IAA Arusha — official crimson */
+  --color-accent-100: #fbe4e5;
+  --color-accent-400: #c9454a;
+  --color-accent-500: #a41e22;
+  --color-accent-600: #8a191d;
+
+  --color-paper-50: #f7f9fc;
+  --color-paper-100: #eef2f7;
+  --color-paper-200: #e2e8f0;
+  --color-ink-900: #0f1b2d;
+}
+
+@layer base {
+  body {
+    @apply bg-paper-50 text-gray-900 antialiased;
+  }
+  /* Vichwa vyote hutumia fonti ya maonyesho: tofauti na maandishi ya
+     kawaida, hivyo ukurasa unasomeka kama brand, si kama waraka. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display tracking-tight;
+    text-wrap: balance;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Wasomaji wasioona mwendo: hakuna Ken Burns wala mzunguko wa lazima. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-kenburns,
+  .animate-pop-in,
+  .animate-rise {
+    animation: none !important;
+  }
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Inatumika pale ambapo listing haina picha bado */
+@utility tile {
+  @apply flex items-center justify-center overflow-hidden rounded-2xl bg-linear-to-br from-paper-100 to-paper-200;
+}
+
+@utility field {
+  @apply w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100;
+}
+
+@utility chip {
+  @apply inline-flex shrink-0 items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition hover:border-primary-200 hover:text-primary-700;
+}
+
+@utility chip-active {
+  @apply border-primary-800 bg-primary-800 text-white hover:border-primary-800 hover:text-white;
 }
