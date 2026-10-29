@@ -508,3 +508,5 @@ Hakuna seed, hakuna data ya majaribio, hakuna emojis za mapambo. Orodha tupu huo
 ujumbe wazi ("hakuna matangazo bado"), na kila bei, picha na hali ya malipo inatokana na
 rekodi ya hifadhidata. Weka data yako mwenyewe — mfumo utaonyesha uhalisia wa kile
 kilichowekwa.
+#   m a r k e t p l a c e  
+ 
