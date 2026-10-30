@@ -165,7 +165,44 @@ create trigger menu_items_updated_at
   for each row execute function public.set_updated_at();
 
 -- =====================================================================
--- 6. Oda
+-- 6. Ofu za muuzi — punguzo analoamua mwenyewe (idhini ya msimamizi
+--    haipo hapa: muuzi huweka asilimia yake, lakiniodi ya chini na
+--    mwisho wa muda hulizuza ofu zisizo na maana).
+--
+--    Jedwali hili lazima lija kabla ya `orders` kwa sababu
+--    `orders.offer_id` linarejelea hapa.
+-- =====================================================================
+
+create table if not exists public.offers (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.businesses (id) on delete cascade,
+  -- Jina la ofu linavyoonekana kwa mnunuzi, mf. "Chakula cha jioni".
+  label text not null check (char_length(label) between 2 and 40),
+  percent_off integer not null check (percent_off between 1 and 90),
+  -- Kikomo cha chini cha jumla ya vipande ili ofu ifanye kazi.
+  min_items_total numeric(12, 2) not null default 0 check (min_items_total >= 0),
+  -- 'items' = punguza bei za vyakula; 'delivery' = punguza adi ya
+  -- usafirishaji; 'all' = punguza zote mbili.
+  scope text not null default 'items'
+    check (scope in ('items', 'delivery', 'all')),
+  starts_at timestamptz not null default now(),
+  ends_at timestamptz,
+  is_active boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (ends_at is null or ends_at > starts_at)
+);
+
+create index if not exists offers_business_idx on public.offers (business_id, is_active);
+create index if not exists offers_live_idx on public.offers (is_active, starts_at, ends_at);
+
+drop trigger if exists offers_updated_at on public.offers;
+create trigger offers_updated_at
+  before update on public.offers
+  for each row execute function public.set_updated_at();
+
+-- =====================================================================
+-- 7. Oda
 -- =====================================================================
 
 create table if not exists public.orders (
@@ -192,13 +229,25 @@ create table if not exists public.orders (
   note text not null default '',
   -- Wakati mnunuzi anapotaka chakula iandaliwe. NULL = "andaa sasa hivi".
   scheduled_at timestamptz,
+  -- Mahali mnunuzi na muuzi wanakutana (uani, barabara kuu, n.k.).
+  meetup_point text not null default '',
+  -- Punguzo la muuzi (angalia jedwali `offers` chini). Thamani hizi
+  -- huandikwa na hifadhidata pekee, si kivinjari.
+  offer_id uuid references public.offers (id) on delete set null,
+  discount numeric(12, 2) not null default 0,
+  offer_label text not null default '',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   completed_at timestamptz
 );
 
--- Miradi iliyopo tayari hapo awali haitenganishi na safu hii mpya.
+-- Miradi iliyopo tayari hapo awali haitenganishi na safu hizi mpya.
 alter table public.orders add column if not exists scheduled_at timestamptz;
+alter table public.orders add column if not exists meetup_point text not null default '';
+alter table public.orders add column if not exists discount numeric(12, 2) not null default 0;
+alter table public.orders add column if not exists offer_label text not null default '';
+alter table public.orders add column if not exists offer_id uuid
+  references public.offers (id) on delete set null;
 
 create unique index if not exists orders_reference_key on public.orders (reference);
 create index if not exists orders_buyer_idx on public.orders (buyer_id, created_at desc);
@@ -233,7 +282,7 @@ create table if not exists public.order_events (
 create index if not exists order_events_order_idx on public.order_events (order_id, created_at);
 
 -- =====================================================================
--- 7. Malipo kwa wauzaji (Snippe disbursements)
+-- 8. Malipo kwa wauzaji (Snippe disbursements)
 -- =====================================================================
 
 -- Snippe haina mgawanyo wa pesa (split payments), hivyo mfumo hukusanya
@@ -264,7 +313,7 @@ create index if not exists payouts_business_idx on public.payouts (business_id, 
 create index if not exists payouts_status_idx on public.payouts (status, created_at);
 
 -- =====================================================================
--- 8. Kazi za umiliki — lazima ziwe BAADA ya jedwali zote
+-- 9. Kazi za umiliki — lazima ziwe BAADA ya jedwali zote
 -- =====================================================================
 
 -- Hizi ni `language sql`: Postgres huhakiki mwili wake papema unapoundwa,
@@ -307,7 +356,7 @@ as $$
 $$;
 
 -- =====================================================================
--- 9. RLS
+-- 10. RLS
 -- =====================================================================
 
 alter table public.profiles enable row level security;
@@ -453,7 +502,7 @@ create policy "orders update admin" on public.orders
   for update using (is_admin_user()) with check (is_admin_user());
 
 -- =====================================================================
--- 10. Ufuatiliaji wa mabadiliko ya oda
+-- 11. Ufuatiliaji wa mabadiliko ya oda
 -- =====================================================================
 
 -- Kila mabadiliko ya hali ya oda huandikwa kwenye order_events ili mnunuzi
@@ -529,10 +578,15 @@ begin
   new.provider := old.provider;
   new.provider_payment_id := old.provider_payment_id;
   new.payment_channel := old.payment_channel;
+  -- Punguzo huhesabiwa na trigger ya vipande: kivinjari hakiwezi kujipa
+  -- ofu wala kubadilisha kiasi cha punguzo baada ya oda kuundwa.
+  new.offer_id := old.offer_id;
 
   if not syncing_totals then
     new.items_total := old.items_total;
     new.total := old.total;
+    new.discount := old.discount;
+    new.offer_label := old.offer_label;
   end if;
 
   is_owner := public.is_business_owner(old.business_id);
@@ -554,6 +608,7 @@ begin
     new.delivery_method := old.delivery_method;
     new.contact_phone := old.contact_phone;
     new.delivery_address := old.delivery_address;
+    new.meetup_point := old.meetup_point;
     new.note := old.note;
   end if;
 
@@ -601,8 +656,25 @@ begin
   new.payment_channel := '';
   new.items_total := 0;
   new.total := 0;
+  new.discount := 0;
+  new.offer_label := '';
   new.status := 'pending';
   new.completed_at := null;
+
+  -- Ofu hukubalika tu ikiwa ni ya biashara hii, imewashwa, iko ndani ya
+  -- muda wake, na inaanza kabla ya oda hii. Kwingine hukatwa kimya kimya
+  -- (punguzo huhesabiwa tena na trigger ya vipande).
+  if new.offer_id is not null and not exists (
+    select 1
+      from public.offers f
+     where f.id = new.offer_id
+       and f.business_id = new.business_id
+       and f.is_active
+       and f.starts_at <= now()
+       and (f.ends_at is null or f.ends_at > now())
+  ) then
+    new.offer_id := null;
+  end if;
 
   new.reference := upper(
     'IAA-' || to_char(now(), 'yymmdd') || '-' ||
@@ -704,8 +776,41 @@ begin
            (select sum(line_total) from public.order_items where order_id = target), 0)
    where o.id = target;
 
+  -- Punguzo huhesabiwa hapa, si kivjarini: ofu lazima iwe ya biashara
+  -- hii, imewashwa, iko ndani ya muda wake, na jumla ya vipande ifikie
+  -- kikomo cha chini cha muuzi.
+  update public.orders o
+     set discount = round(coalesce((
+           select case
+                    when f.scope = 'delivery'
+                      then o.delivery_fee * f.percent_off / 100.0
+                    when f.scope = 'all'
+                      then (o.items_total + o.delivery_fee) * f.percent_off / 100.0
+                    else o.items_total * f.percent_off / 100.0
+                  end
+             from public.offers f
+            where f.id = o.offer_id
+              and f.business_id = o.business_id
+              and f.is_active
+              and f.starts_at <= now()
+              and (f.ends_at is null or f.ends_at > now())
+              and o.items_total >= f.min_items_total
+         ), 0), 2),
+         offer_label = coalesce((
+           select f.label
+             from public.offers f
+            where f.id = o.offer_id
+              and f.business_id = o.business_id
+              and f.is_active
+              and f.starts_at <= now()
+              and (f.ends_at is null or f.ends_at > now())
+              and o.items_total >= f.min_items_total
+         ), '')
+   where o.id = target;
+
   update public.orders o
      set total = o.items_total
+                 - o.discount
                  + case when o.delivery_method = 'delivery' then o.delivery_fee else 0 end
    where o.id = target;
 
@@ -721,7 +826,7 @@ create trigger order_items_sync_total
   for each row execute function public.sync_order_total();
 
 -- =====================================================================
--- 11. Storage — kikapu kimoja cha picha za umma
+-- 12. Storage — kikapu kimoja cha picha za umma
 -- =====================================================================
 
 insert into storage.buckets (id, name, public)
@@ -763,7 +868,7 @@ create policy "media delete own folder" on storage.objects
   );
 
 -- =====================================================================
--- 12. Habari na matukio ya uani (announcements)
+-- 13. Habari na matukio ya uani (announcements)
 -- =====================================================================
 
 -- Ukurasa wa /news unaonyesha tu safu zilizowekwa hapa na msimamizi.
@@ -801,4 +906,381 @@ create policy "announcements update admin" on public.announcements
   for update using (is_admin_user()) with check (is_admin_user());
 drop policy if exists "announcements delete admin" on public.announcements;
 create policy "announcements delete admin" on public.announcements
+  for delete using (is_admin_user());
+
+-- =====================================================================
+-- 14. Maoni ya wanunuzi (reviews) — nyota tano + maoni, wazi kwa umma
+-- =====================================================================
+
+-- Kiwango cha chini cha usahihi: maoni hutokea tu baada ya oda kukamilika,
+-- na yameunganishwa na oda hiyo hiyo. Hivyo hakuna akaunti ya kujipa
+-- nyota zake mwenyewe.
+alter table public.businesses   add column if not exists rating_avg numeric(3, 2) not null default 0;
+alter table public.businesses   add column if not exists rating_count integer not null default 0;
+alter table public.menu_items   add column if not exists rating_avg numeric(3, 2) not null default 0;
+alter table public.menu_items   add column if not exists rating_count integer not null default 0;
+alter table public.listings     add column if not exists rating_avg numeric(3, 2) not null default 0;
+alter table public.listings     add column if not exists rating_count integer not null default 0;
+
+create table if not exists public.reviews (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.businesses (id) on delete cascade,
+  author_id uuid not null references public.profiles (id) on delete cascade,
+  order_id uuid not null references public.orders (id) on delete cascade,
+  -- Chaguo la lazima: kipande ambacho maoni yanahusu (chakula, huduma
+  -- au bidhaa). Likibaki null, maoni yanahusu biashara yote.
+  menu_item_id uuid references public.menu_items (id) on delete set null,
+  listing_id uuid references public.listings (id) on delete set null,
+  rating integer not null check (rating between 1 and 5),
+  comment text not null default '' check (char_length(comment) <= 600),
+  -- Msimamizi anaweza kuficha maoni yanakiuka sheria; hayaonekani
+  -- kwenye wastani wala kwa umma, lakini yanabaki kwa ushahidi.
+  is_hidden boolean not null default false,
+  created_at timestamptz not null default now(),
+  -- Mnunuzi mmoja, oda moja, maoni moja.
+  unique (order_id, author_id)
+);
+
+create index if not exists reviews_business_idx on public.reviews (business_id, created_at desc);
+create index if not exists reviews_item_idx on public.reviews (menu_item_id, created_at desc);
+create index if not exists reviews_listing_idx on public.reviews (listing_id, created_at desc);
+
+-- Maoni lazima yaendane na oda halisi iliyokamilika ya mnunuzi yeye mwenye,
+-- na kipande kilichotajwa lazima kiwe cha muuzi huyo.
+create or replace function public.guard_review()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  -- Msimamizi anaweza kuficha maoni ya mtu mwingine; hapo hakuna cha
+  -- kuhakiki kuhusu mnunuzi, lakini utambulisho wa mstari hubaki pale pale.
+  if tg_op = 'UPDATE' and new.author_id is distinct from auth.uid() then
+    if not public.is_admin_user() then
+      raise exception 'Huweza kuandika maoni yako mwenyewe';
+    end if;
+    new.author_id := old.author_id;
+    new.order_id := old.order_id;
+    new.business_id := old.business_id;
+    new.created_at := old.created_at;
+    return new;
+  end if;
+
+  -- Mwandishi anarekebisha maoni yake, si kuhamisha oda kwa mtu mwingine.
+  if tg_op = 'UPDATE' then
+    new.author_id := old.author_id;
+    new.order_id := old.order_id;
+    new.business_id := old.business_id;
+    new.created_at := old.created_at;
+  end if;
+
+  if not exists (
+    select 1
+      from public.orders o
+     where o.id = new.order_id
+       and o.buyer_id = auth.uid()
+       and o.business_id = new.business_id
+       and o.status = 'completed'
+  ) then
+    raise exception 'Maoni yaandikwa tu baada ya oda yako kukamilika';
+  end if;
+
+  if new.menu_item_id is not null and not exists (
+    select 1 from public.menu_items m
+     where m.id = new.menu_item_id and m.business_id = new.business_id
+  ) then
+    new.menu_item_id := null;
+  end if;
+
+  if new.listing_id is not null and not exists (
+    select 1 from public.listings l
+     where l.id = new.listing_id and l.business_id = new.business_id
+  ) then
+    new.listing_id := null;
+  end if;
+
+  -- Kipande kimoja tu kwa ukumbi: chakula AU bidhaa, si vyombi.
+  if new.menu_item_id is not null and new.listing_id is not null then
+    new.listing_id := null;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists reviews_guard on public.reviews;
+create trigger reviews_guard
+  before insert or update on public.reviews
+  for each row execute function public.guard_review();
+
+-- Wastani wa nyota huhesabiwa na hifadhidata ili orodha za umma zisionye
+-- nambari zilizopotoka. Maoni yaliyofichwa hayahesabiwi.
+create or replace function public.refresh_review_stats()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  -- Kwa AFTER DELETE, `new` haijapangwa kabisa; kusoma new.business_id
+  -- kungegwusha kosa la muda. TG_OP ndiyo njia sahihi ya kutofautisha.
+  biz uuid := case when TG_OP = 'DELETE' then old.business_id else new.business_id end;
+  mid uuid := case when TG_OP = 'DELETE' then old.menu_item_id else new.menu_item_id end;
+  lid uuid := case when TG_OP = 'DELETE' then old.listing_id else new.listing_id end;
+begin
+  -- Kipande kilichohamishwa au kufutwa kinahitaji kuhesabiwa upya.
+  if TG_OP = 'UPDATE' then
+    biz := coalesce(old.business_id, biz);
+    mid := coalesce(old.menu_item_id, mid);
+    lid := coalesce(old.listing_id, lid);
+  end if;
+
+  if biz is not null then
+    update public.businesses b
+       set rating_count = (
+             select count(*) from public.reviews r
+              where r.business_id = b.id and not r.is_hidden),
+           rating_avg = coalesce((
+             select round(avg(r.rating)::numeric, 2) from public.reviews r
+              where r.business_id = b.id and not r.is_hidden), 0)
+     where b.id = biz;
+  end if;
+
+  if mid is not null then
+    update public.menu_items m
+       set rating_count = (
+             select count(*) from public.reviews r
+              where r.menu_item_id = m.id and not r.is_hidden),
+           rating_avg = coalesce((
+             select round(avg(r.rating)::numeric, 2) from public.reviews r
+              where r.menu_item_id = m.id and not r.is_hidden), 0)
+     where m.id = mid;
+  end if;
+
+  if lid is not null then
+    update public.listings l
+       set rating_count = (
+             select count(*) from public.reviews r
+              where r.listing_id = l.id and not r.is_hidden),
+           rating_avg = coalesce((
+             select round(avg(r.rating)::numeric, 2) from public.reviews r
+              where r.listing_id = l.id and not r.is_hidden), 0)
+     where l.id = lid;
+  end if;
+
+  return null;
+end;
+$$;
+
+drop trigger if exists reviews_refresh_stats on public.reviews;
+create trigger reviews_refresh_stats
+  after insert or update or delete on public.reviews
+  for each row execute function public.refresh_review_stats();
+
+alter table public.reviews enable row level security;
+
+-- Maoni yaliyowekwa wazi yanaonekana hata kwa mtu ambaye hajaingia;
+-- yaliyofichwa yanaonekana kwa mwandishi na msimamizi pekee.
+drop policy if exists "reviews read public" on public.reviews;
+create policy "reviews read public" on public.reviews
+  for select using (not is_hidden or author_id = auth.uid() or is_admin_user());
+drop policy if exists "reviews insert buyer" on public.reviews;
+create policy "reviews insert buyer" on public.reviews
+  for insert to authenticated with check (author_id = auth.uid());
+-- Mwandishi anaweza kurekebisha maoni yake; kuficha ni haki ya msimamizi.
+drop policy if exists "reviews update author" on public.reviews;
+create policy "reviews update author" on public.reviews
+  for update to authenticated
+  using (author_id = auth.uid())
+  with check (author_id = auth.uid() and is_hidden = false);
+drop policy if exists "reviews update admin" on public.reviews;
+create policy "reviews update admin" on public.reviews
+  for update using (is_admin_user()) with check (is_admin_user());
+drop policy if exists "reviews delete admin" on public.reviews;
+create policy "reviews delete admin" on public.reviews
+  for delete using (is_admin_user());
+
+-- =====================================================================
+-- 15. Viungo vya mitandao ya kijamii na mipangilio ya tovuti
+-- =====================================================================
+
+-- Ukurasa wa mguu unaonyesha icon halisi za jukwaa ZILE ambazo msimamizi
+-- ameweka kiungo chao. Jedwali litakapobaki tupu, hakuna kitu kinachoonekana.
+create table if not exists public.social_links (
+  id uuid primary key default gen_random_uuid(),
+  platform text not null check (platform in (
+    'instagram', 'tiktok', 'x', 'facebook', 'whatsapp',
+    'telegram', 'youtube', 'linkedin', 'website'
+  )),
+  url text not null check (url ~* '^https?://'),
+  -- Jina linaloonekana chini ya icon; likiwa tupu, jina la jukwaa hutumika.
+  label text not null default '',
+  is_active boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  -- Jukwaa moja, kiungo kimoja kwenye mguu wa ukurasa.
+  unique (platform)
+);
+
+drop trigger if exists social_links_updated_at on public.social_links;
+create trigger social_links_updated_at
+  before update on public.social_links
+  for each row execute function public.set_updated_at();
+
+alter table public.social_links enable row level security;
+
+drop policy if exists "social read active" on public.social_links;
+create policy "social read active" on public.social_links
+  for select using (is_active or is_admin_user());
+drop policy if exists "social write admin" on public.social_links;
+create policy "social write admin" on public.social_links
+  for insert to authenticated with check (is_admin_user());
+drop policy if exists "social update admin" on public.social_links;
+create policy "social update admin" on public.social_links
+  for update using (is_admin_user()) with check (is_admin_user());
+drop policy if exists "social delete admin" on public.social_links;
+create policy "social delete admin" on public.social_links
+  for delete using (is_admin_user());
+
+-- Mipangilio michache ya tovuti (simu ya huduma kwa wateja, n.k.).
+-- Thamani huwekwa kama maandishi; somo la ufunguo huo huo hurudi null.
+create table if not exists public.app_settings (
+  key text primary key check (key ~ '^[a-z0-9_]{2,40}$'),
+  value text not null default '',
+  updated_by uuid references public.profiles (id) on delete set null,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.app_settings enable row level security;
+
+drop policy if exists "settings read" on public.app_settings;
+create policy "settings read" on public.app_settings
+  for select using (true);
+drop policy if exists "settings write admin" on public.app_settings;
+create policy "settings write admin" on public.app_settings
+  for insert to authenticated with check (is_admin_user());
+drop policy if exists "settings update admin" on public.app_settings;
+create policy "settings update admin" on public.app_settings
+  for update using (is_admin_user()) with check (is_admin_user());
+drop policy if exists "settings delete admin" on public.app_settings;
+create policy "settings delete admin" on public.app_settings
+  for delete using (is_admin_user());
+
+-- =====================================================================
+-- 16. Matangazo yaliyolipwa — bei za muda huwekwa na msimamizi
+-- =====================================================================
+
+-- Msimamizi huamua bei kwa siku, wiki na mwezi kwa kila nafasi; muuzi
+-- huchagua mpango na idadi ya siku, kisha msimamizi huthibitisha malipo.
+create table if not exists public.ad_plans (
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (char_length(name) between 2 and 50),
+  description text not null default '',
+  -- Nafasi ambapo tangazo linaonekana.
+  placement text not null default 'msosi'
+    check (placement in ('home', 'msosi', 'market')),
+  price_per_day numeric(12, 2) not null default 0 check (price_per_day >= 0),
+  price_per_week numeric(12, 2) not null default 0 check (price_per_week >= 0),
+  price_per_month numeric(12, 2) not null default 0 check (price_per_month >= 0),
+  max_days integer not null default 30 check (max_days between 1 and 365),
+  is_active boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists ad_plans_updated_at on public.ad_plans;
+create trigger ad_plans_updated_at
+  before update on public.ad_plans
+  for each row execute function public.set_updated_at();
+
+create table if not exists public.ads (
+  id uuid primary key default gen_random_uuid(),
+  plan_id uuid references public.ad_plans (id) on delete set null,
+  business_id uuid not null references public.businesses (id) on delete cascade,
+  title text not null check (char_length(title) between 2 and 60),
+  image_path text,
+  -- Kiungo cha ndani (/msosi/<slug>) au cha nje kinachoanzisha https.
+  target_url text not null default '',
+  days integer not null default 1 check (days between 1 and 365),
+  -- Bei ya mwisho huwekwa na msimamizi anapoidhinisha, ili mpangilio
+  -- wa bei ubadilike bila kubadilisha makubaliano yaliyofikiwa.
+  price numeric(12, 2) not null default 0 check (price >= 0),
+  status text not null default 'submitted'
+    check (status in ('submitted', 'approved', 'live', 'rejected', 'expired', 'cancelled')),
+  starts_at timestamptz,
+  ends_at timestamptz,
+  review_note text not null default '',
+  created_by uuid references public.profiles (id) on delete set null,
+  approved_by uuid references public.profiles (id) on delete set null,
+  paid_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists ads_live_idx on public.ads (status, ends_at);
+create index if not exists ads_business_idx on public.ads (business_id, created_at desc);
+
+drop trigger if exists ads_updated_at on public.ads;
+create trigger ads_updated_at
+  before update on public.ads
+  for each row execute function public.set_updated_at();
+
+-- Tangazo huondolewa kwenye kurasa za umma muda wake ukisoma.
+create or replace function public.expire_live_ads()
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.ads
+     set status = 'expired'
+   where status = 'live'
+     and ends_at is not null
+     and ends_at <= now();
+$$;
+
+alter table public.ad_plans enable row level security;
+alter table public.ads enable row level security;
+
+drop policy if exists "ad plans read" on public.ad_plans;
+create policy "ad plans read" on public.ad_plans
+  for select using (is_active or is_admin_user());
+drop policy if exists "ad plans write admin" on public.ad_plans;
+create policy "ad plans write admin" on public.ad_plans
+  for insert to authenticated with check (is_admin_user());
+drop policy if exists "ad plans update admin" on public.ad_plans;
+create policy "ad plans update admin" on public.ad_plans
+  for update using (is_admin_user()) with check (is_admin_user());
+drop policy if exists "ad plans delete admin" on public.ad_plans;
+create policy "ad plans delete admin" on public.ad_plans
+  for delete using (is_admin_user());
+
+drop policy if exists "ads read live" on public.ads;
+create policy "ads read live" on public.ads
+  for select using (
+    (status = 'live' and (ends_at is null or ends_at > now()))
+    or is_business_owner(business_id)
+    or is_admin_user()
+  );
+drop policy if exists "ads insert owner" on public.ads;
+create policy "ads insert owner" on public.ads
+  for insert to authenticated with check (
+    is_business_owner(business_id)
+    and created_by = auth.uid()
+    and status = 'submitted'
+  );
+-- Muuzi ahifadhi tu hadi msimamizi aamue; baadaye hubadilishwa na msimamizi.
+drop policy if exists "ads update owner" on public.ads;
+create policy "ads update owner" on public.ads
+  for update to authenticated
+  using (is_business_owner(business_id) and status = 'submitted')
+  with check (is_business_owner(business_id) and status in ('submitted', 'cancelled'));
+drop policy if exists "ads update admin" on public.ads;
+create policy "ads update admin" on public.ads
+  for update using (is_admin_user()) with check (is_admin_user());
+drop policy if exists "ads delete admin" on public.ads;
+create policy "ads delete admin" on public.ads
   for delete using (is_admin_user());

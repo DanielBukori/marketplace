@@ -2,22 +2,28 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowLeft, BadgeCheck, Clock, MapPin, Minus, Plus } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Clock, MapPin, Minus, Percent, Plus } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { fill } from "@/lib/i18n";
 import { formatTzs } from "@/lib/data";
 import { mediaUrl } from "@/lib/media";
 import BusinessLogo from "@/components/BusinessLogo";
-import type { Business, Listing, MenuItem } from "@/lib/types";
+import ReviewList from "@/components/ReviewList";
+import StarRating from "@/components/StarRating";
+import type { Business, Listing, MenuItem, Offer, Review } from "@/lib/types";
 
 export default function Storefront({
   business,
   menu,
   listings,
+  offers,
+  reviews,
 }: {
   business: Business;
   menu: MenuItem[];
   listings: Listing[];
+  offers: Offer[];
+  reviews: Review[];
 }) {
   const { t } = useLanguage();
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -109,6 +115,15 @@ export default function Storefront({
                 )}
               </h1>
               <div className="mt-2 space-y-1 text-[15px] text-gray-500">
+                {business.rating_count > 0 && (
+                  <p className="flex items-center gap-2">
+                    <StarRating
+                      value={Number(business.rating_avg)}
+                      size={17}
+                      label={fill(t.reviews.count, { count: business.rating_count })}
+                    />
+                  </p>
+                )}
                 {business.location && (
                   <p className="flex items-center gap-2">
                     <MapPin size={15} /> {business.location}
@@ -139,6 +154,30 @@ export default function Storefront({
       </div>
 
       <div className="mx-auto max-w-5xl space-y-12 px-4 pt-10 sm:px-6 lg:px-8">
+        {offers.length > 0 && (
+          <section
+            aria-label={t.offer.title}
+            className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 sm:mx-0 sm:px-0"
+          >
+            {offers.map((offer) => (
+              <span
+                key={offer.id}
+                className="flex shrink-0 items-center gap-2 rounded-2xl border border-accent-400 bg-accent-100 px-4 py-2.5 text-sm font-bold text-accent-600"
+              >
+                <Percent size={15} aria-hidden />
+                {offer.percent_off}% · {offer.label}
+                {Number(offer.min_items_total) > 0 && (
+                  <span className="font-medium text-accent-600/80">
+                    {fill(t.offer.fromNote, {
+                      min: formatTzs(Number(offer.min_items_total)),
+                    })}
+                  </span>
+                )}
+              </span>
+            ))}
+          </section>
+        )}
+
         {menu.length === 0 && listings.length === 0 && (
           <p className="rounded-3xl border border-dashed border-primary-200 bg-white p-12 text-center text-[15px] text-gray-500">
             {fill(t.storefront.empty, { name: business.name })}

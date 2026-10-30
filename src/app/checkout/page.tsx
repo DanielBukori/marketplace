@@ -6,6 +6,7 @@ import { isSupabaseConfigured } from "@/lib/media";
 import { getT } from "@/lib/i18n-server";
 import SetupNotice from "@/components/SetupNotice";
 import { notFound } from "next/navigation";
+import type { MenuItem, Offer } from "@/lib/types";
 
 export default async function CheckoutPage({
   searchParams,
@@ -21,6 +22,8 @@ export default async function CheckoutPage({
   let businessId = "";
   let businessName = "";
   let deliveryFee = 0;
+  let extras: MenuItem[] = [];
+  let offers: Offer[] = [];
 
   if (listingId) {
     const listing = await getListing(listingId);
@@ -60,6 +63,11 @@ export default async function CheckoutPage({
         photoPath: item.photo_path,
       }));
 
+    // Kipande ambacho mnunuzi hakijaichagua bado kinaweza kuongezwa
+    // kwenye oda hii — vinywaji hasa, lakini na vitafunio vyovyote.
+    extras = board.menu.filter((item) => !wanted.has(item.id));
+    offers = board.offers;
+
     businessId = board.business.id;
     businessName = board.business.name;
     deliveryFee = board.business.delivery_fee;
@@ -92,6 +100,8 @@ export default async function CheckoutPage({
 
       <CheckoutForm
         lines={lines}
+        extras={extras}
+        offers={offers}
         businessId={businessId}
         deliveryFee={deliveryFee}
         contact={{ email: user.email ?? "", phone: "" }}

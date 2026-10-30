@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2, ImageOff } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { createClient } from "@/lib/supabase/client";
+import ReviewComposer from "@/components/ReviewComposer";
 import { mediaUrl } from "@/lib/media";
 import { formatTzs } from "@/lib/data";
 import type { Order, OrderStatus } from "@/lib/types";
@@ -136,6 +137,16 @@ export default function OrderDetail({
 
         <dl className="space-y-1.5 border-t border-black/5 pt-4 text-sm">
           <Row label={t.checkout.itemTotal} value={formatTzs(order.items_total)} />
+          {Number(order.discount) > 0 && (
+            <Row
+              label={
+                order.offer_label
+                  ? `${t.checkout.offerRowLabel} · ${order.offer_label}`
+                  : t.checkout.offerRowLabel
+              }
+              value={`−${formatTzs(Number(order.discount))}`}
+            />
+          )}
           {order.delivery_fee > 0 && (
             <Row label={t.checkout.fee} value={formatTzs(order.delivery_fee)} />
           )}
@@ -154,17 +165,22 @@ export default function OrderDetail({
               ? `${t.orders.address}: ${order.delivery_address || "—"}`
               : t.orders.pickup}
           </p>
+          {order.meetup_point && (
+            <p>
+              {t.orders.meetupLabel}: {order.meetup_point}
+            </p>
+          )}
           {order.note && <p>{t.orders.note}: {order.note}</p>}
           {order.kind === "food" && (
             <p>
               {t.orders.whenLabel}:{" "}
               {order.scheduled_at
-                ? new Date(order.scheduled_at).toLocaleString("sw-TZ")
+                ? new Date(order.scheduled_at).toLocaleString(t.localeDate)
                 : t.orders.whenAsap}
             </p>
           )}
           <p>
-            {t.orders.placedOn}: {new Date(order.created_at).toLocaleString("sw-TZ")}
+            {t.orders.placedOn}: {new Date(order.created_at).toLocaleString(t.localeDate)}
           </p>
         </div>
 
@@ -241,6 +257,30 @@ export default function OrderDetail({
         </button>
       )}
 
+      {isBuyer && order.status === "completed" && (
+        <section className="space-y-4">
+          <h2 className="text-lg font-extrabold tracking-tight text-ink-900">
+            {t.reviews.sectionTitle}
+          </h2>
+          {order.has_review ? (
+            <p className="rounded-2xl bg-primary-50 px-5 py-4 text-sm font-semibold text-primary-800">
+              {t.reviews.already}
+            </p>
+          ) : (
+            <ReviewComposer
+              orderId={order.id}
+              businessId={order.business_id}
+              lines={(order.items ?? [])
+                .filter((item) => item.menu_item_id)
+                .map((item) => ({
+                  menuItemId: item.menu_item_id,
+                  name: item.name,
+                }))}
+            />
+          )}
+        </section>
+      )}
+
       {(order.events?.length ?? 0) > 0 && (
         <section className="space-y-4 rounded-3xl border border-black/5 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-extrabold tracking-tight text-ink-900">
@@ -256,7 +296,7 @@ export default function OrderDetail({
                   </p>
                   {event.note && <p className="text-gray-500">{event.note}</p>}
                   <p className="text-xs text-gray-400">
-                    {new Date(event.created_at).toLocaleString("sw-TZ")}
+                    {new Date(event.created_at).toLocaleString(t.localeDate)}
                   </p>
                 </div>
               </li>

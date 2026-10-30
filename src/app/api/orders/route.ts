@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
   const deliveryMethod = body.deliveryMethod === "delivery" ? "delivery" : "pickup";
   const contactPhone = String(body.contactPhone ?? "").replace(/[^\d+]/g, "");
   const deliveryAddress = String(body.deliveryAddress ?? "").slice(0, 240);
+  const meetupPoint = String(body.meetupPoint ?? "").trim().slice(0, 120);
   const note = String(body.note ?? "").slice(0, 300);
 
   if (!UUID.test(businessId) || items.length === 0) {
@@ -95,10 +96,28 @@ export async function POST(request: NextRequest) {
     scheduledAt = new Date(wanted).toISOString();
   }
 
+  // Ofu huthibitishwa hapa kwa kuipa muuzi nafasi ya kuizima mara moja,
+  // lakini kiasi cha punguzo hukokotolewa tena na trigger
+  // `sync_order_total()` — hivyo hakuna njia ya kupata punguzo la uongo.
+  let offerId: string | null = null;
+  const rawOffer = String(body.offerId ?? "");
+  if (UUID.test(rawOffer)) {
+    const { data: offer } = await supabase
+      .from("offers")
+      .select("id")
+      .eq("id", rawOffer)
+      .eq("business_id", businessId)
+      .eq("is_active", true)
+      .lte("starts_at", new Date().toISOString())
+      .maybeSingle<{ id: string }>();
+
+    if (offer) offerId = offer.id;
+  }
+
   // Bei, jina na jumla huhukumiwa na triggers za hifadhidata, hivyo thamani
   // zilizotumwa na kivinjari hazwezi kubadilisha kile kinachoandikwa.
-  // `scheduled_at` huongezwa tu ikiwa mnunuzi aliomba saa — hivyo kutuma null
-  // kwa miradi ambayo safu bado haijaongezwa kushindisha oda zote.
+  // Safu mpya huongezwa tu zikiwa na thamani — hivyo miradi ambayo
+  // migration bado haijatumika haiendelea kupokea oda.
   const newOrder: Record<string, unknown> = {
     buyer_id: user.id,
     business_id: businessId,
@@ -110,6 +129,8 @@ export async function POST(request: NextRequest) {
     note: note.trim(),
   };
   if (scheduledAt) newOrder.scheduled_at = scheduledAt;
+  if (meetupPoint) newOrder.meetup_point = meetupPoint;
+  if (offerId) newOrder.offer_id = offerId;
 
   const { data: order, error: orderError } = await supabase
     .from("orders")

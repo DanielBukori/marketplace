@@ -16,6 +16,25 @@ export type PaymentStatus =
   | "refunded";
 export type PayoutMethod = "airtel" | "mpesa" | "mixx" | "halotel" | "bank";
 export type PayoutStatus = "queued" | "processing" | "sent" | "failed";
+export type OfferScope = "items" | "delivery" | "all";
+export type SocialPlatform =
+  | "instagram"
+  | "tiktok"
+  | "x"
+  | "facebook"
+  | "whatsapp"
+  | "telegram"
+  | "youtube"
+  | "linkedin"
+  | "website";
+export type AdPlacement = "home" | "msosi" | "market";
+export type AdStatus =
+  | "submitted"
+  | "approved"
+  | "live"
+  | "rejected"
+  | "expired"
+  | "cancelled";
 
 export type Profile = {
   id: string;
@@ -42,6 +61,8 @@ export type Business = {
   delivery_fee: number;
   is_active: boolean;
   is_verified: boolean;
+  rating_avg: number;
+  rating_count: number;
   created_at: string;
 };
 
@@ -60,6 +81,8 @@ export type Listing = {
   whatsapp: string | null;
   location: string | null;
   view_count: number;
+  rating_avg: number;
+  rating_count: number;
   published_at: string | null;
   created_at: string;
   business?: Pick<
@@ -73,6 +96,8 @@ export type Listing = {
     | "location"
     | "logo_path"
     | "is_verified"
+    | "rating_avg"
+    | "rating_count"
   >;
 };
 
@@ -85,7 +110,81 @@ export type MenuItem = {
   slot: string;
   photo_path: string | null;
   is_available: boolean;
+  rating_avg: number;
+  rating_count: number;
   business?: Pick<Business, "id" | "name" | "slug">;
+};
+
+/** Punguzo analoamua muuzi mwenyewe kwa vyakula au adi zake. */
+export type Offer = {
+  id: string;
+  business_id: string;
+  label: string;
+  percent_off: number;
+  min_items_total: number;
+  scope: OfferScope;
+  starts_at: string;
+  ends_at: string | null;
+  is_active: boolean;
+  business?: Pick<Business, "id" | "name" | "slug">;
+};
+
+/** Maoni ya mnunuzi baada ya oda kukamilika — nyota 1 hadi 5. */
+export type Review = {
+  id: string;
+  business_id: string;
+  author_id: string;
+  order_id: string;
+  menu_item_id: string | null;
+  listing_id: string | null;
+  rating: number;
+  comment: string;
+  is_hidden: boolean;
+  created_at: string;
+  author?: Pick<Profile, "id" | "full_name" | "avatar_path">;
+  business?: Pick<Business, "id" | "name" | "slug">;
+  menu_item?: { name: string } | null;
+};
+
+export type SocialLink = {
+  id: string;
+  platform: SocialPlatform;
+  url: string;
+  label: string;
+  is_active: boolean;
+  sort_order: number;
+};
+
+/** Mpango wa tangazo: bei za muda huwekwa na msimamizi. */
+export type AdPlan = {
+  id: string;
+  name: string;
+  description: string;
+  placement: AdPlacement;
+  price_per_day: number;
+  price_per_week: number;
+  price_per_month: number;
+  max_days: number;
+  is_active: boolean;
+  sort_order: number;
+};
+
+export type Ad = {
+  id: string;
+  plan_id: string | null;
+  business_id: string;
+  title: string;
+  image_path: string | null;
+  target_url: string;
+  days: number;
+  price: number;
+  status: AdStatus;
+  starts_at: string | null;
+  ends_at: string | null;
+  review_note: string;
+  created_at: string;
+  business?: Pick<Business, "id" | "name" | "slug" | "logo_path">;
+  plan?: Pick<AdPlan, "id" | "name" | "placement">;
 };
 
 export type OrderItem = {
@@ -120,11 +219,15 @@ export type Order = {
   provider_payment_id: string | null;
   payment_channel: string;
   items_total: number;
+  discount: number;
+  offer_id: string | null;
+  offer_label: string;
   delivery_fee: number;
   total: number;
   delivery_method: "pickup" | "delivery";
   contact_phone: string;
   delivery_address: string;
+  meetup_point: string;
   note: string;
   scheduled_at: string | null;
   created_at: string;
@@ -132,6 +235,8 @@ export type Order = {
   business?: Pick<Business, "id" | "name" | "slug">;
   items?: OrderItem[];
   events?: OrderEvent[];
+  buyer?: Pick<Profile, "id" | "full_name" | "phone">;
+  has_review?: boolean;
 };
 
 export type Announcement = {

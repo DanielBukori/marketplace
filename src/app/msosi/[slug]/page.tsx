@@ -19,6 +19,8 @@ export default async function BusinessPage({
       business={board.business}
       menu={board.menu}
       listings={board.listings}
+      offers={board.offers}
+      reviews={board.reviews}
     />
   );
 }
