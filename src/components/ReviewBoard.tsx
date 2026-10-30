@@ -76,7 +76,7 @@ export default function ReviewBoard({ businesses }: { businesses: Business[] }) 
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href={`/msosi/${encodeURIComponent(business.slug)}`}
-              className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-ink-900 transition hover:border-primary-300"
+              className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-ink-900 transition hover:border-primary-400"
             >
               {t.common.viewPage}
             </Link>
@@ -96,7 +96,7 @@ export default function ReviewBoard({ businesses }: { businesses: Business[] }) 
               type="button"
               disabled={busyId === business.id}
               onClick={() => patch(business.id, { is_active: !business.is_active })}
-              className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-ink-900 transition hover:border-primary-300 disabled:opacity-50"
+              className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-ink-900 transition hover:border-primary-400 disabled:opacity-50"
             >
               {business.is_active ? t.admin.turnOff : t.admin.turnOn}
             </button>

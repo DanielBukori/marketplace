@@ -510,7 +510,9 @@ export async function getAllAds(): Promise<Ad[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("ads")
-    .select("*, business:businesses(id, name, slug, logo_path)")
+    .select(
+      "*, business:businesses(id, name, slug, logo_path), plan:ad_plans(id, name, placement)",
+    )
     .order("created_at", { ascending: false })
     .limit(100);
 
@@ -530,3 +532,106 @@ export async function getAllReviews(): Promise<Review[]> {
   if (error) throw error;
   return (data ?? []) as unknown as Review[];
 }
+
+export type OrderFilter =
+  | "all"
+  | "open"
+  | "paid"
+  | "unpaid"
+  | "completed"
+  | "cancelled";
+
+const ORDER_FILTERS: Record<OrderFilter, () => [string, string[] | string]> = {
+  all: () => ["status", []],
+  open: () => ["status", ["pending", "confirmed", "preparing", "ready"]],
+  paid: () => ["payment_status", "paid"],
+  unpaid: () => ["payment_status", ["unpaid", "awaiting_payment", "failed"]],
+  completed: () => ["status", "completed"],
+  cancelled: () => ["status", "cancelled"],
+};
+
+/** Oda zote zinazoonekana kwa msimamizi, zimepangwa mpya kwanza. */
+export async function getAllOrders(
+  filter: OrderFilter = "all",
+  search = "",
+): Promise<Order[]> {
+  const supabase = await createClient();
+  let query = supabase
+    .from("orders")
+    .select(`${ORDER_FIELDS}, buyer:profiles(id, full_name, phone, avatar_path)`)
+    .order("created_at", { ascending: false })
+    .limit(80);
+
+  const [column, value] = ORDER_FILTERS[filter]();
+  if (filter !== "all") {
+    query = Array.isArray(value) ? query.in(column, value) : query.eq(column, value);
+  }
+
+  const term = search.trim().replace(/[%_,()]/g, "");
+  if (term) {
+    query = query.or(
+      `reference.ilike.%${term}%,contact_phone.ilike.%${term}%,note.ilike.%${term}%`,
+    );
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data ?? []) as unknown as Order[];
+}
+
+/** Hesabu za kituo cha usimamizi. Zinaonyesha ukweli, si makadirio. */
+export async function getAdminStats(): Promise<AdminStats> {
+  const supabase = await createClient();
+  const tables = [
+    "businesses",
+    "listings",
+    "orders",
+    "reviews",
+    "ads",
+    "payouts",
+  ] as const;
+
+  const counts = await Promise.all(
+    tables.map(async (table) => {
+      const { count } = await supabase
+        .from(table)
+        .select("id", { count: "exact", head: true });
+      return [table, count ?? 0] as const;
+    }),
+  );
+
+  const stats = Object.fromEntries(counts) as Record<(typeof tables)[number], number>;
+
+  const [{ count: openOrders }, { count: submittedAds }] = await Promise.all([
+    supabase
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .in("status", ["pending", "confirmed", "preparing", "ready"]),
+    supabase
+      .from("ads")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "submitted"),
+  ]);
+
+  return {
+    businesses: stats.businesses,
+    listings: stats.listings,
+    orders: stats.orders,
+    reviews: stats.reviews,
+    ads: stats.ads,
+    payouts: stats.payouts,
+    openOrders: openOrders ?? 0,
+    submittedAds: submittedAds ?? 0,
+  };
+}
+
+export type AdminStats = {
+  businesses: number;
+  listings: number;
+  orders: number;
+  reviews: number;
+  ads: number;
+  payouts: number;
+  openOrders: number;
+  submittedAds: number;
+};

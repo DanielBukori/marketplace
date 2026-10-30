@@ -9,10 +9,12 @@ import {
   Phone,
   Store,
 } from "lucide-react";
-import { getListing } from "@/lib/db";
+import { getItemReviews, getListing } from "@/lib/db";
 import { isSupabaseConfigured, mediaUrl } from "@/lib/media";
 import { formatTzs } from "@/lib/data";
 import { fill, fillUrl } from "@/lib/i18n";
+import ReviewList from "@/components/ReviewList";
+import StarRating from "@/components/StarRating";
 import { getT } from "@/lib/i18n-server";
 import { notFound } from "next/navigation";
 
@@ -33,6 +35,7 @@ export default async function ProductPage({
 
   const t = await getT();
   const photos = listing.photo_paths.map(mediaUrl).filter(Boolean) as string[];
+  const reviews = await getItemReviews("listing_id", listing.id);
   const isSold = listing.status === "sold" || listing.stock === 0;
   const whatsapp =
     listing.whatsapp ?? listing.business?.whatsapp ?? listing.business?.phone;
@@ -194,6 +197,32 @@ export default async function ProductPage({
               </p>
             </div>
           )}
+
+          <div className="mt-10 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-sm font-bold uppercase tracking-[0.14em] text-ink-900">
+                {t.reviews.sectionTitle}
+              </h2>
+              {listing.rating_count > 0 && (
+                <StarRating
+                  value={Number(listing.rating_avg)}
+                  size={17}
+                  label={fill(t.reviews.count, { count: listing.rating_count })}
+                />
+              )}
+            </div>
+            <ReviewList
+              reviews={reviews}
+              locale={t.localeDate}
+              labels={{
+                empty: t.reviews.emptyListing,
+                verified: t.reviews.verified,
+                hidden: t.reviews.hiddenBadge,
+                about: t.reviews.about,
+              }}
+            />
+            <p className="text-xs leading-relaxed text-gray-400">{t.reviews.policy}</p>
+          </div>
 
           <p className="mt-10 text-xs leading-relaxed text-gray-400">
             {t.product.safetyTip}

@@ -214,6 +214,15 @@ export default function Storefront({
 
                     <div className="min-w-0 flex-1">
                       <p className="font-bold text-ink-900">{item.name}</p>
+                      {item.rating_count > 0 && (
+                        <p className="mt-1">
+                          <StarRating
+                            value={Number(item.rating_avg)}
+                            size={13}
+                            label={fill(t.reviews.count, { count: item.rating_count })}
+                          />
+                        </p>
+                      )}
                       {item.description && (
                         <p className="mt-0.5 line-clamp-2 text-sm text-gray-500">
                           {item.description}
@@ -304,6 +313,34 @@ export default function Storefront({
             </div>
           </section>
         )}
+      </div>
+
+      <div className="mx-auto max-w-5xl px-4 pt-14 sm:px-6 lg:px-8">
+        <section className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-extrabold tracking-tight text-ink-900">
+              {t.reviews.sectionTitle}
+            </h2>
+            {business.rating_count > 0 && (
+              <StarRating
+                value={Number(business.rating_avg)}
+                size={18}
+                label={fill(t.reviews.count, { count: business.rating_count })}
+              />
+            )}
+          </div>
+          <ReviewList
+            reviews={reviews}
+            locale={t.localeDate}
+            labels={{
+              empty: t.reviews.emptyStore,
+              verified: t.reviews.verified,
+              hidden: t.reviews.hiddenBadge,
+              about: t.reviews.about,
+            }}
+          />
+          <p className="text-xs leading-relaxed text-gray-400">{t.reviews.policy}</p>
+        </section>
       </div>
 
       {lines.length > 0 && (

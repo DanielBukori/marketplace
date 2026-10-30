@@ -183,7 +183,7 @@ export default function PayoutBoard({
                         onClick={() =>
                           saveDestination(payout.id, destinations[payout.id] ?? payout.destination)
                         }
-                        className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-ink-900 transition hover:border-primary-300 disabled:opacity-50"
+                        className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-ink-900 transition hover:border-primary-400 disabled:opacity-50"
                       >
                         {t.dashboard.payoutUpdate}
                       </button>

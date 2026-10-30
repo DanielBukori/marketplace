@@ -7,6 +7,8 @@ import { LanguageProvider } from "@/context/LanguageContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { dictFor } from "@/lib/i18n";
 import { getLang } from "@/lib/i18n-server";
+import { getSettings, getSocialLinks } from "@/lib/db";
+import { isSupabaseConfigured } from "@/lib/media";
 
 /**
  * next/font hupakia fonti kwenye seva wakati wa kujenga, kwa hivyo tovuti
@@ -46,6 +48,9 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const lang = await getLang();
+  const [socialLinks, support] = isSupabaseConfigured
+    ? await Promise.all([getSocialLinks(), getSettings()])
+    : [[], {}];
 
   return (
     <html lang={lang}>
@@ -56,7 +61,7 @@ export default async function RootLayout({
           <AuthProvider>
             <Navbar />
             <main className="w-full flex-1">{children}</main>
-            <Footer />
+            <Footer links={socialLinks} support={support} />
           </AuthProvider>
         </LanguageProvider>
       </body>

@@ -31,7 +31,7 @@ export default async function ServicesPage() {
 
       {providers.length === 0 && listings.length === 0 ? (
         <div className="mt-10 rounded-3xl border border-dashed border-primary-200 bg-white p-12 text-center">
-          <Wrench className="mx-auto text-primary-300" size={28} />
+          <Wrench className="mx-auto text-primary-400" size={28} />
           <p className="mt-4 text-[15px] text-gray-600">{t.services.empty}</p>
           <Link
             href="/dashboard/business/new"

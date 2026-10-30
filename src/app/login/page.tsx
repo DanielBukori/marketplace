@@ -68,7 +68,7 @@ function AuthRow({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="group flex w-full items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3.5 text-left transition enabled:hover:border-primary-300 enabled:hover:bg-primary-50/50 disabled:opacity-60"
+      className="group flex w-full items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3.5 text-left transition enabled:hover:border-primary-400 enabled:hover:bg-primary-50/50 disabled:opacity-60"
     >
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-paper-100 text-primary-700 transition group-enabled:group-hover:bg-white">
         {icon}

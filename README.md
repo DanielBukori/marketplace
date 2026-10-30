@@ -290,6 +290,18 @@ kwenye kadi, pamoja na ujumbe halisi wa Supabase chini yake; tengenezo liko kati
 5. Oda huonekana kwa mnunuzi (`/orders`) na kwa muuzi (`/dashboard/orders`). Kila
    mabadiliko ya hali huandikwa kwenye `order_events`, kwa hivyo historia haifutiki.
 6. Malipo huanza kwenye `/orders/<id>` kwa kubofya **Lipa**.
+7. Ukurasa wa **Checkout** una sehemu tatu za ziada zinazotoka kwenye data halisi:
+   - **Vinywaji na viongezo** — vipande vyote vingine vya muuzaji huyo vilivyoko
+     kwenye `menu_items`; mnunuzi huviongeza hapa hapo bila kufungua oda nyingine.
+   - **Ofa** — punguzo ambalo muuzaji mwenyewe aliweka (`offers`); kivinjari hutuma
+     `offer_id` peke yake, nne ya punguzo huhesabiwa na seva.
+   - **Mahali pa kukutana** (`orders.meetup_point`) — mnunuzi anayechagua
+     kuchukua mwenyewe au pre-order huandika anwani ya kukutia; gharama ya
+     delivery inabaki 0.
+8. Oda inapowekwa hali `completed`, mnunuzi hupokea **fomu ya maoni** kwenye
+   `/orders/<id>`: nyota 1–5 na maoni, na anaweza kuchagua kipande maalum cha menyu
+   anachokikadirisha. Maoni ni ya umma, huonekana kwenye `/msosi`, `/market`,
+   ukurasa wa bidhaa na ukurasa wa muuzaji.
 
 ### Muuzi
 
@@ -305,7 +317,16 @@ kwenye kadi, pamoja na ujumbe halisi wa Supabase chini yake; tengenezo liko kati
    (`media/<namba-yako>/…`): JPG, PNG au WebP, hadi 5MB kwa picha.
 5. Muuzi hubadilisha hatua za oda (`pending → confirmed → preparing → ready →
    completed`) kwenye `/dashboard/orders`.
-6. Oda za **chakula** tu ndizo zinazoomba saa: kwenye `/checkout` mnunuzi huchagua
+6. **Ofa** (`/dashboard/offers`): muuzaji anaweka jina, asilimia ya punguzo,
+   kitu kinachoguswa (bei za bidhaa / gharama ya delivery / jumla ya oda), kima cha
+   chini cha jumla ya bidhaa na tarehe za kuanza/kuisha. Yeye mwenyewe ndiye
+   anayeamua — hakuna msimamizi anayehusika, na ofa isipooanza haiathiri oda.
+7. **Matangazo ya kulipwa** (`/dashboard/ads`): muuzaji huchagua mpango
+   (`ad_plans`), muda (siku 1 / wiki 1 / mwezi 1 au idadi yake mwenyewe, ikiwa
+   mpango una ukomo `max_days`), kichwa, picha na ukurasa unaopelekwa. Bei
+   anaona kama **kadri** (`quotePrice`); ombi huingia `status = submitted` na halijaonekani
+   kwa umma hadi msimamizi aidhinishe na kuthibitisha malipo.
+8. Oda za **chakula** tu ndizo zinazoomba saa: kwenye `/checkout` mnunuzi huchagua
    "Haraka — sasa hivi" (`scheduled_at` inabaki `NULL`) au "Chagua saa"
    (`orders.scheduled_at`). Seva hukataa muda uliopita au uliozidi wiki mbili mbele,
    na muuzi huona kile ambacho mnunuzi aliomba kwenye `/dashboard/orders`.
@@ -508,5 +529,49 @@ Hakuna seed, hakuna data ya majaribio, hakuna emojis za mapambo. Orodha tupu huo
 ujumbe wazi ("hakuna matangazo bado"), na kila bei, picha na hali ya malipo inatokana na
 rekodi ya hifadhidata. Weka data yako mwenyewe — mfumo utaonyesha uhalisia wa kile
 kilichowekwa.
-#   m a r k e t p l a c e  
- 
+
+## 9. Kituo cha udhibiti (`/dashboard/admin`)
+
+Kinapatikana kwa wale wanao `profiles.is_admin = true` tu (`RequireAdmin` hukaribia
+wengine). Hakuna kitufe kinachobadilisha pesa kimyakimya — kila mabadiliko ya hali ya
+malipo hupitia `/api/admin/orders` kwa funguo ya `service_role` ya seva, na
+`protect_order_columns()` huzuia kivinjari kubadilisha safu za pesa moja kwa moja.
+
+| Ukurasa | Kinachofanyika huko |
+| --- | --- |
+| `/dashboard/admin` | Muhtasari: idadi ya biashara, matangazo, oda, maoni, tangazo la kulipwa na malipo; kiunga cha kila udhibiti. |
+| `/dashboard/admin/support` | **Kituo cha msaada.** Tafuta oda kwa namba ya kumbukumbu au simu, chuja (chazi / zilizolipwa / zisizolipwa), piga simu mnunuzi, kisha weka hali ya oda na hali ya malipo. Kudhibiti malipo ya nje kunaandika `provider = cash` (mfumo haudhani Snippe ilikusanya) na kunukuu mtu aliyefanya mabadiliko kwenye `order_events`. Oda ambayo ni `paid` **na** `completed` huongeza malipo ya muuzaji kwenye foleni moja kwa moja (`payouts_order_key` huzuia marudio). |
+| `/dashboard/admin/reviews` | Ficha maoni yanayokiuka sheria, onyesha tena, au futa. Maoni halisi hubaki yanavyoandikwa. |
+| `/dashboard/admin/ads` | Weka mipango ya tangazo (`ad_plans`: bei kwa siku/wiki/mwezi, ukomo wa siku, mahali pa kuonekana) na kadirisha ombi (`submitted → live` kwa tarehe ulizoweka, `rejected`, `expired`), thibitisha malipo (`paid_at`). |
+| `/dashboard/admin/social` | Weka link halisi za mitandiko ya kijamii. Alama huonekana kwenye footer tu baada ya link kuwekwa na kuwashwa; kila moja hupata icon yake halisi na rangi yake ya brand (Instagram, TikTok, X, Facebook, WhatsApp, Telegram, YouTube, LinkedIn, tovuti). |
+| `/dashboard/admin/settings` | Nambari za huduma kwa wateja (`app_settings`: `support_phone`, `support_whatsapp`, `support_email`, `service_hours`). Kila thamani hapa ni **ya umma** — usiweke funguo za siri. |
+| `/dashboard/review`, `/dashboard/news`, `/dashboard/payouts` | Ukaguzi wa biashara, habari za uani, na foleni ya malipo — vinavyoendelea kutumika. |
+
+Ili mtu awe msimamizi, endesha hii kwenye Supabase **SQL Editor** (badilisha barua pepe):
+
+```sql
+update public.profiles p
+set is_admin = true
+from auth.users u
+where p.id = u.id
+  and u.email = 'barua.pepe@msimamizi.com';
+```
+
+## 10. Meza mpya zinazohitaji schema upya
+
+Kituo cha udhibiti, ofa, maoni, matangazo na footer ya mitandiko hutegemea meza
+`offers`, `reviews`, `social_links`, `app_settings`, `ad_plans`, `ads` na safu mpya
+(`businesses/menu_items/listings.rating_avg` + `rating_count`,
+`orders.meetup_point`, `orders.discount`, `orders.offer_label`, `orders.offer_id`).
+
+Mradi uliopo bado hauna hayo, kwa hivyo `/msosi`, `/market`,
+`/dashboard/admin/social` na `/dashboard/admin/reviews` hutoa kosa la database hadi
+schema upya itakapowekwa — hakuna kitu kinachofutwa: `supabase/schema.sql` imetayariwa kwa
+`if not exists` na `drop policy if exists`, kwa hivyo kuendesha faili nzima mara ya
+pili kunaongeza tu meza, safu, policies na triggers ambazo hazipo bado.
+
+1. Fungua Supabase dashboard → **SQL Editor** → **New query**.
+2. Bandika yaliyomo kote katika `supabase/schema.sql` → **Run**.
+3. Pakia upya tovuti; kurasa zilizotajwa hapo juu huanza kufanya kazi, na
+   `/dashboard/admin` huonyesha idadi halisi badala ya paneli ya "hakuna jedwali".
+

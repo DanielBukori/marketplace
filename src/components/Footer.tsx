@@ -1,10 +1,35 @@
 "use client";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Globe } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import BrandIcon, { brandHex, platformLabel } from "@/components/BrandIcon";
+import type { SocialLink } from "@/lib/types";
 
-export default function Footer() {
+export default function Footer({
+  links = [],
+  support = {},
+}: {
+  links?: SocialLink[];
+  support?: Record<string, string>;
+}) {
   const { t } = useLanguage();
+
+  const contacts = [
+    support.support_phone
+      ? { label: t.footer.callUs, value: support.support_phone, href: `tel:${support.support_phone}` }
+      : null,
+    support.support_whatsapp
+      ? {
+          label: t.footer.whatsappUs,
+          value: support.support_whatsapp,
+          href: `https://wa.me/${support.support_whatsapp.replace(/[^0-9]/g, "")}`,
+        }
+      : null,
+    support.support_email
+      ? { label: t.footer.emailUs, value: support.support_email, href: `mailto:${support.support_email}` }
+      : null,
+  ].filter((c): c is { label: string; value: string; href: string } => c !== null);
 
   const columns = [
     {
@@ -52,6 +77,52 @@ export default function Footer() {
           >
             <Globe size={17} /> iaa.ac.tz
           </a>
+
+          {contacts.length > 0 && (
+            <ul className="mt-6 space-y-2 text-sm">
+              {contacts.map((c) => (
+                <li key={c.href} className="flex flex-wrap items-baseline gap-x-2">
+                  <span className="font-semibold text-ink-900">{c.label}:</span>
+                  <a
+                    href={c.href}
+                    target={c.href.startsWith("http") ? "_blank" : undefined}
+                    rel="noreferrer"
+                    className="text-gray-500 transition hover:text-primary-700"
+                  >
+                    {c.value}
+                  </a>
+                </li>
+              ))}
+              {support.service_hours && (
+                <li className="text-gray-400">{support.service_hours}</li>
+              )}
+            </ul>
+          )}
+
+          {links.length > 0 && (
+            <div className="mt-7">
+              <h5 className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400">
+                {t.footer.followUs}
+              </h5>
+              <ul className="mt-3 flex flex-wrap gap-2.5">
+                {links.map((link) => (
+                  <li key={link.id}>
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noreferrer me nofollow"
+                      aria-label={link.label || platformLabel(link.platform)}
+                      title={link.label || platformLabel(link.platform)}
+                      style={{ "--brand": brandHex(link.platform) } as CSSProperties}
+                      className="flex h-11 w-11 items-center justify-center rounded-2xl border border-black/5 bg-white text-gray-500 transition duration-200 hover:-translate-y-0.5 hover:bg-(--brand) hover:text-white hover:shadow-lg hover:shadow-black/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--brand) active:translate-y-0 sm:h-12 sm:w-12"
+                    >
+                      <BrandIcon platform={link.platform} size={21} />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         {columns.map((column) => (

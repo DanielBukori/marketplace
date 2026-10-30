@@ -211,7 +211,7 @@ export default function OrderDetail({
                     className={`rounded-full px-4 py-2 text-sm font-bold transition ${
                       channel === option
                         ? "bg-primary-800 text-white"
-                        : "border border-gray-200 bg-white text-ink-900 hover:border-primary-300"
+                        : "border border-gray-200 bg-white text-ink-900 hover:border-primary-400"
                     }`}
                   >
                     {t.channels[option]}

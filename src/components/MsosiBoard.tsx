@@ -20,6 +20,7 @@ import { fill } from "@/lib/i18n";
 import { formatTzsShort, menuSlotIds } from "@/lib/data";
 import { mediaUrl } from "@/lib/media";
 import BusinessLogo from "@/components/BusinessLogo";
+import StarRating from "@/components/StarRating";
 import type { Business, MenuItem } from "@/lib/types";
 
 const stepIcons = [UtensilsCrossed, Smartphone, Bike];
@@ -272,7 +273,16 @@ function MenuCard({ item, slug }: { item: MenuItem; slug?: string }) {
 
       <div className="p-5">
         <h3 className="text-lg font-extrabold text-ink-900">{item.name}</h3>
-        <p className="mt-1 text-sm text-gray-500">{item.business?.name}</p>
+        <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500">
+          {item.business?.name}
+          {item.rating_count > 0 && (
+            <StarRating
+              value={Number(item.rating_avg)}
+              size={13}
+              label={fill(t.reviews.count, { count: item.rating_count })}
+            />
+          )}
+        </p>
         {item.description && (
           <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-gray-500">
             {item.description}
@@ -336,6 +346,15 @@ function VendorCard({ business }: { business: Business }) {
           <Clock size={13} className="shrink-0" />
           {business.opening_hours ?? "—"}
         </span>
+        {business.rating_count > 0 && (
+          <span className="mt-1.5 block">
+            <StarRating
+              value={Number(business.rating_avg)}
+              size={14}
+              label={fill(t.reviews.count, { count: business.rating_count })}
+            />
+          </span>
+        )}
       </span>
       <ChevronRight size={20} className="shrink-0 text-primary-700" />
     </Link>

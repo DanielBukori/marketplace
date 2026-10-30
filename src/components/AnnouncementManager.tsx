@@ -170,7 +170,7 @@ export default function AnnouncementManager({ items }: { items: Announcement[] }
                     onClick={() => toggle(item.id, !item.published)}
                     className={`rounded-xl px-4 py-2 text-sm font-bold transition disabled:opacity-50 ${
                       item.published
-                        ? "border border-gray-200 text-ink-900 hover:border-primary-300"
+                        ? "border border-gray-200 text-ink-900 hover:border-primary-400"
                         : "bg-primary-800 text-white hover:bg-primary-900"
                     }`}
                   >

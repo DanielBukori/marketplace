@@ -30,7 +30,9 @@ export default function ReviewComposer({
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  const foodLines = lines.filter((line) => line.menuItemId);
+  const foodLines = lines.filter(
+    (line): line is { menuItemId: string; name: string } => line.menuItemId !== null,
+  );
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -105,7 +107,7 @@ export default function ReviewComposer({
           </button>
         ))}
         <span className="ml-2 text-sm font-bold text-ink-900">
-          {rating > 0 ? t.reviews.stars[rating] : t.reviews.pickStars}
+          {rating > 0 ? t.reviews.stars[rating - 1] : t.reviews.pickStars}
         </span>
       </div>
 

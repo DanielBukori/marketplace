@@ -1,36 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdminActor as adminActor } from "@/lib/admin-actor";
 import { createAdminClient, isAdminClientConfigured } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/media";
 import { createDisbursement, isSnippeConfigured, type SnippeChannel } from "@/lib/snippe";
 import type { Payout } from "@/lib/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** Ruksa za msimamizi pekee; rudi majibu ya kosa ikiwa mtumiaji hana daraja. */
-async function adminActor() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: NextResponse.json({ message: "Ingia kwanza." }, { status: 401 }) } as const;
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .maybeSingle<{ is_admin: boolean }>();
-
-  if (!profile?.is_admin) {
-    return { error: NextResponse.json({ message: "Hati hii ni ya msimamizi." }, { status: 403 }) } as const;
-  }
-
-  return { ok: true } as const;
-}
 
 /** Kubadilisha namba ya muuzi kwenye foli kabla pesa haijatumwa. */
 export async function PATCH(request: NextRequest) {

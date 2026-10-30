@@ -182,6 +182,7 @@ export type Ad = {
   starts_at: string | null;
   ends_at: string | null;
   review_note: string;
+  paid_at: string | null;
   created_at: string;
   business?: Pick<Business, "id" | "name" | "slug" | "logo_path">;
   plan?: Pick<AdPlan, "id" | "name" | "placement">;

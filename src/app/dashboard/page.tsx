@@ -1,5 +1,17 @@
 import Link from "next/link";
-import { Plus, Store, Package, ClipboardList, Megaphone, ShieldCheck, Wallet } from "lucide-react";
+import {
+  ChevronRight,
+  ClipboardList,
+  FileText,
+  Megaphone,
+  Package,
+  Percent,
+  Plus,
+  Settings2,
+  ShieldCheck,
+  Store,
+  Wallet,
+} from "lucide-react";
 import { requireUser } from "@/lib/require-user";
 import { getMyBusinesses, getProfile } from "@/lib/db";
 import { isSupabaseConfigured } from "@/lib/media";
@@ -35,13 +47,16 @@ export default async function DashboardPage() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat icon={Store} label={t.dashboard.statBusinesses} value={businesses.length} />
-        <Stat icon={Package} label={t.dashboard.statListings} value="—" href="/dashboard/listings" />
-        <Stat icon={ClipboardList} label={t.dashboard.statOrders} value="—" href="/dashboard/orders" />
-        <Stat icon={Wallet} label={t.dashboard.payouts} value="—" href="/dashboard/payouts" />
+        <Tile icon={Package} label={t.dashboard.statListings} href="/dashboard/listings" />
+        <Tile icon={ClipboardList} label={t.dashboard.statOrders} href="/dashboard/orders" />
+        <Tile icon={Wallet} label={t.dashboard.payouts} href="/dashboard/payouts" />
+        <Tile icon={Percent} label={t.dashboard.statOffers} href="/dashboard/offers" />
+        <Tile icon={Megaphone} label={t.dashboard.statAds} href="/dashboard/ads" />
         {profile?.is_admin && (
           <>
-            <Stat icon={ShieldCheck} label={t.dashboard.statReview} value="—" href="/dashboard/review" />
-            <Stat icon={Megaphone} label={t.dashboard.statNews} value="—" href="/dashboard/news" />
+            <Tile icon={Settings2} label={t.dashboard.statAdmin} href="/dashboard/admin" />
+            <Tile icon={ShieldCheck} label={t.dashboard.statReview} href="/dashboard/review" />
+            <Tile icon={FileText} label={t.dashboard.statNews} href="/dashboard/news" />
           </>
         )}
       </div>
@@ -84,13 +99,13 @@ export default async function DashboardPage() {
                   </span>
                   {b.is_verified && (
                     <span className="rounded-full bg-accent-100 px-2 py-0.5 text-accent-600">
-                      Verified
+                      {t.msosi.verifiedShort}
                     </span>
                   )}
                 </p>
                 {b.delivery_fee > 0 && (
                   <p className="mt-2 text-sm text-gray-500">
-                    Delivery {formatTzs(b.delivery_fee)}
+                    {t.checkout.fee} {formatTzs(b.delivery_fee)}
                   </p>
                 )}
               </Link>
@@ -106,14 +121,12 @@ function Stat({
   icon: Icon,
   label,
   value,
-  href,
 }: {
   icon: React.ComponentType<{ size?: number }>;
   label: string;
   value: string | number;
-  href?: string;
 }) {
-  const inner = (
+  return (
     <div className="flex items-center gap-4 rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
       <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-50">
         <Icon size={22} />
@@ -124,5 +137,27 @@ function Stat({
       </div>
     </div>
   );
-  return href ? <Link href={href}>{inner}</Link> : inner;
+}
+
+function Tile({
+  icon: Icon,
+  label,
+  href,
+}: {
+  icon: React.ComponentType<{ size?: number }>;
+  label: string;
+  href: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-4 rounded-3xl border border-black/5 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md"
+    >
+      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
+        <Icon size={22} />
+      </span>
+      <p className="min-w-0 flex-1 text-[15px] font-extrabold text-ink-900">{label}</p>
+      <ChevronRight size={18} className="shrink-0 text-gray-400" />
+    </Link>
+  );
 }

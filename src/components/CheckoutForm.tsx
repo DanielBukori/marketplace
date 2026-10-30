@@ -296,7 +296,7 @@ export default function CheckoutForm({
                   className={`flex cursor-pointer items-center gap-3 rounded-2xl border bg-white p-3 transition ${
                     offerId === offer.id
                       ? "border-accent-500 ring-2 ring-accent-100"
-                      : "border-black/5 hover:border-accent-200"
+                      : "border-black/5 hover:border-accent-400"
                   } ${blocked ? "opacity-60" : ""}`}
                 >
                   <input

@@ -500,6 +500,28 @@ create policy "businesses update admin" on public.businesses
 drop policy if exists "orders update admin" on public.orders;
 create policy "orders update admin" on public.orders
   for update using (is_admin_user()) with check (is_admin_user());
+-- Kituo cha huduma kwa wateja: msimamizi huona oda zote ili amsaidie
+-- aliyepigiwa simu. Hii ni kwa usomaji tu — kubadilisha safu za pesa
+-- bado kunahitaji seva (service_role).
+drop policy if exists "orders read admin" on public.orders;
+create policy "orders read admin" on public.orders
+  for select using (is_admin_user());
+drop policy if exists "order items read admin" on public.order_items;
+create policy "order items read admin" on public.order_items
+  for select using (
+    exists (
+      select 1 from public.orders o
+      where o.id = order_id and public.is_admin_user()
+    )
+  );
+drop policy if exists "order events read admin" on public.order_events;
+create policy "order events read admin" on public.order_events
+  for select using (
+    exists (
+      select 1 from public.orders o
+      where o.id = order_id and public.is_admin_user()
+    )
+  );
 
 -- =====================================================================
 -- 11. Ufuatiliaji wa mabadiliko ya oda
@@ -1146,6 +1168,8 @@ create policy "social delete admin" on public.social_links
 
 -- Mipangilio michache ya tovuti (simu ya huduma kwa wateja, n.k.).
 -- Thamani huwekwa kama maandishi; somo la ufunguo huo huo hurudi null.
+-- ANGALICO: ufunguo unakabidhiwa mtu yeyote (hata ambaye hajaingia), kwa
+-- hivyo weka hapa taarifa zinazokusudiwa kuwa za umma pekee.
 create table if not exists public.app_settings (
   key text primary key check (key ~ '^[a-z0-9_]{2,40}$'),
   value text not null default '',
