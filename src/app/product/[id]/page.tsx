@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { getItemReviews, getListing } from "@/lib/db";
 import { isSupabaseConfigured, mediaUrl } from "@/lib/media";
-import { formatTzs } from "@/lib/data";
+import { categoryGroup, formatTzs, type ListingCategory } from "@/lib/data";
 import { fill, fillUrl } from "@/lib/i18n";
 import ReviewList from "@/components/ReviewList";
 import StarRating from "@/components/StarRating";
@@ -37,6 +37,7 @@ export default async function ProductPage({
   const photos = listing.photo_paths.map(mediaUrl).filter(Boolean) as string[];
   const reviews = await getItemReviews("listing_id", listing.id);
   const isSold = listing.status === "sold" || listing.stock === 0;
+  const group = categoryGroup(listing.category);
   const whatsapp =
     listing.whatsapp ?? listing.business?.whatsapp ?? listing.business?.phone;
   const phone = listing.business?.phone ?? listing.whatsapp;
@@ -83,10 +84,15 @@ export default async function ProductPage({
         <div>
           <div className="flex flex-wrap items-center gap-3">
             <span className="rounded-full bg-accent-500 px-4 py-1.5 text-sm font-extrabold text-white">
+              {group === "services" && `${t.market.from} `}
               {formatTzs(listing.price)}
+              {group === "rooms" && ` · ${t.market.perMonth}`}
             </span>
             <span className="rounded-full bg-primary-50 px-4 py-1.5 text-sm font-semibold text-primary-800">
-              {t.conditions[listing.condition]}
+              {group === "goods"
+                ? t.conditions[listing.condition]
+                : (t.categories[listing.category as ListingCategory] ??
+                    t.categories.services)}
             </span>
             {listing.is_negotiable && (
               <span className="rounded-full bg-paper-100 px-4 py-1.5 text-sm font-semibold text-gray-600">
@@ -136,7 +142,7 @@ export default async function ProductPage({
                     {listing.business.description || t.product.sellerNoAbout}
                   </p>
                   <Link
-                    href={`/msosi/${listing.business.slug}`}
+                    href={`/duka/${listing.business.slug}`}
                     className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-primary-700 hover:text-primary-900"
                   >
                     {t.product.sellerStore} <ArrowRight size={15} />
@@ -152,12 +158,18 @@ export default async function ProductPage({
             </p>
           ) : (
             <div className="mt-8 space-y-3">
-              <Link
-                href={`/checkout?listing=${listing.id}`}
-                className="flex w-full items-center justify-center rounded-2xl bg-primary-800 px-6 py-4 text-[15px] font-extrabold text-white shadow-sm transition hover:bg-primary-900"
-              >
-                {t.product.buyNow}
-              </Link>
+              {group === "rooms" ? (
+                <p className="rounded-2xl bg-primary-50 p-4 text-[15px] font-semibold leading-relaxed text-primary-900">
+                  {t.rooms.contactNote}
+                </p>
+              ) : (
+                <Link
+                  href={`/checkout?listing=${listing.id}`}
+                  className="flex w-full items-center justify-center rounded-2xl bg-primary-800 px-6 py-4 text-[15px] font-extrabold text-white shadow-sm transition hover:bg-primary-900"
+                >
+                  {t.product.buyNow}
+                </Link>
+              )}
 
               {whatsapp && (
                 <a

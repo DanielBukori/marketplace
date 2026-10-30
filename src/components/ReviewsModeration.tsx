@@ -73,7 +73,7 @@ export default function ReviewsModeration({ reviews }: { reviews: Review[] }) {
                 </p>
                 {review.business?.slug ? (
                   <Link
-                    href={`/msosi/${review.business.slug}`}
+                    href={`/duka/${review.business.slug}`}
                     className="text-sm font-semibold text-primary-700 hover:text-primary-900"
                   >
                     {review.business.name}

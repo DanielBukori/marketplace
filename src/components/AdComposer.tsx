@@ -228,7 +228,7 @@ export default function AdComposer({
                 value={targetUrl}
                 onChange={(event) => setTargetUrl(event.target.value)}
                 maxLength={200}
-                placeholder="/msosi/kula-bora"
+                placeholder="/duka/kula-bora"
                 className="field mt-1.5 w-full"
               />
             </label>

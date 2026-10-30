@@ -33,7 +33,7 @@ export default async function EditBusinessPage({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <a
-          href={`/msosi/${encodeURIComponent(business.slug)}`}
+          href={`/duka/${encodeURIComponent(business.slug)}`}
           className="rounded-2xl border border-black/5 bg-white px-6 py-4 text-center text-sm font-bold text-ink-900 transition hover:bg-paper-100"
         >
           {t.business.viewPage}

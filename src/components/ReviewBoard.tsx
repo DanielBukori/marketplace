@@ -75,7 +75,7 @@ export default function ReviewBoard({ businesses }: { businesses: Business[] }) 
 
           <div className="flex flex-wrap items-center gap-2">
             <Link
-              href={`/msosi/${encodeURIComponent(business.slug)}`}
+              href={`/duka/${encodeURIComponent(business.slug)}`}
               className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-ink-900 transition hover:border-primary-400"
             >
               {t.common.viewPage}

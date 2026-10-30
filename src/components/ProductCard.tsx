@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, MapPin, ImageOff } from "lucide-react";
 import { mediaUrl } from "@/lib/media";
-import { formatTzs } from "@/lib/data";
+import { categoryGroup, formatTzs, type ListingCategory } from "@/lib/data";
 import { useLanguage } from "@/context/LanguageContext";
 import type { Listing } from "@/lib/types";
 
@@ -23,6 +23,21 @@ export default function ProductCard({
   const { t } = useLanguage();
   const photo = mediaUrl(listing.photo_paths[0]);
   const isSold = listing.status === "sold" || listing.stock === 0;
+  const group = categoryGroup(listing.category);
+  /** Vyumba na huduma havina "hali" ya bidhaa iliyotumika — badala yake
+   *  tunaonyesha aina yake ili kadi isemeye kitu halisi. */
+  const topBadge =
+    group === "goods"
+      ? {
+          text: t.conditions[listing.condition],
+          tone: conditionTone[listing.condition],
+        }
+      : {
+          text:
+            t.categories[listing.category as ListingCategory] ??
+            t.categories.services,
+          tone: "bg-white/95 text-ink-900",
+        };
 
   return (
     <article
@@ -43,13 +58,24 @@ export default function ProductCard({
           )}
         </div>
 
-        <span className="absolute left-3 top-3 rounded-full bg-accent-500 px-3 py-1 text-xs font-extrabold text-ink-900 shadow-sm">
-          {formatTzs(listing.price)}
+        <span className="absolute left-3 top-3 rounded-2xl bg-accent-500 px-3 py-1.5 text-center text-xs font-extrabold leading-tight text-white shadow-sm">
+          {group === "services" && (
+            <span className="block text-[10px] font-bold uppercase tracking-wide opacity-90">
+              {t.market.from}
+            </span>
+          )}
+          <span className="block">{formatTzs(listing.price)}</span>
+          {group === "rooms" && (
+            <span className="block text-[10px] font-bold opacity-90">
+              {t.market.perMonth}
+            </span>
+          )}
         </span>
+
         <span
-          className={`absolute right-3 top-3 rounded-full px-3 py-1 text-xs font-semibold shadow-sm ${conditionTone[listing.condition]}`}
+          className={`absolute right-3 top-3 rounded-full px-3 py-1 text-xs font-semibold shadow-sm ${topBadge.tone}`}
         >
-          {t.conditions[listing.condition]}
+          {topBadge.text}
         </span>
 
         {isSold && (
@@ -67,8 +93,16 @@ export default function ProductCard({
         </h3>
         <p className="mt-1.5 flex items-center gap-1.5 text-sm text-gray-500">
           <MapPin size={14} className="shrink-0" />
-          <span className="truncate">{listing.location ?? listing.business?.name}</span>
+          <span className="truncate">
+            {listing.location ?? listing.business?.name}
+          </span>
         </p>
+
+        {listing.is_negotiable && (
+          <p className="mt-2 inline-flex rounded-full bg-primary-50 px-2.5 py-1 text-[11px] font-bold text-primary-800">
+            {t.market.negotiable}
+          </p>
+        )}
 
         <Link
           href={`/product/${listing.id}`}

@@ -255,7 +255,7 @@ function EmptyState({
 function MenuCard({ item, slug }: { item: MenuItem; slug?: string }) {
   const { t } = useLanguage();
   const photo = mediaUrl(item.photo_path);
-  const href = slug ? `/msosi/${slug}` : "#menu";
+  const href = slug ? `/duka/${slug}` : "#menu";
 
   return (
     <article className="overflow-hidden rounded-[26px] border border-black/5 bg-white shadow-[0_14px_34px_-28px_rgba(16,24,40,0.8)] transition hover:-translate-y-0.5">
@@ -311,7 +311,7 @@ function VendorCard({ business }: { business: Business }) {
 
   return (
     <Link
-      href={`/msosi/${business.slug}`}
+      href={`/duka/${business.slug}`}
       className="flex items-center gap-4 rounded-[26px] border border-black/5 bg-white p-5 shadow-[0_14px_34px_-28px_rgba(16,24,40,0.8)] transition hover:-translate-y-0.5 hover:border-primary-200"
     >
       <BusinessLogo name={business.name} logoPath={business.logo_path} />

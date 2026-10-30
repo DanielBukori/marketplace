@@ -31,7 +31,7 @@ export default function AdStrip({
       <ul className="no-scrollbar mt-4 flex gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-4">
         {ads.map((ad) => {
           const src = mediaUrl(ad.image_path);
-          const href = ad.target_url || (ad.business?.slug ? `/msosi/${ad.business.slug}` : null);
+          const href = ad.target_url || (ad.business?.slug ? `/duka/${ad.business.slug}` : null);
 
           return (
             <li key={ad.id} className="w-[240px] shrink-0 sm:w-auto">

@@ -276,7 +276,18 @@ kwenye kadi, pamoja na ujumbe halisi wa Supabase chini yake; tengenezo liko kati
 
 ### Mnunuzi
 
-1. Anaingia `/msosi` (menyu za migahawa) au `/market` (bidhaa, vyumba, huduma).
+1. Anaingia kwenye moja ya kurasa hizi — kila moja ina maana yake:
+   - `/msosi` — menyu za migahawa ya uani (chakula pekee);
+   - `/market` — bidhaa za mkononi, na tab ya **Vyumba** ndani yake;
+   - `/vyumba` — ukurasa wa peke wake wa vyumba na nafasi za kukaa. Bei huandikwa
+     **kwa mwezi**, na chumba **hakilipwi** kupitia `/checkout`: mnunuzi anapanga
+     muda wa kuiona na mmiliki kwanza;
+   - `/services` — huduma halisi zenye bei ya kweli (fundi simu, kinyozi, shwari,
+     nguo, umeme, karatasi, usafi, masomo, hesabu…), kila moja ikiwa chini ya
+     kichujio cha utaalamu wake.
+   Ukurasa wa biashara yoyote — chakula, bidhaa au huduma — uko `/duka/<slug>`.
+   Kiungo cha zamani `/msosi/<slug>` kinaelekezwa papema huko (`redirects()` katika
+   `next.config.ts`), kwa hivyo viungo vilivyoshirikiwa havivunjiki.
 2. Abofya kipande → **Agiza** → kikapu hukusanya vipande.
 3. `/checkout` huonyesha jumla, gharama ya delivery na njia (kuchukua kwa muuzi au
    kupelekwa kwa anwani).
@@ -300,8 +311,10 @@ kwenye kadi, pamoja na ujumbe halisi wa Supabase chini yake; tengenezo liko kati
      delivery inabaki 0.
 8. Oda inapowekwa hali `completed`, mnunuzi hupokea **fomu ya maoni** kwenye
    `/orders/<id>`: nyota 1–5 na maoni, na anaweza kuchagua kipande maalum cha menyu
-   anachokikadirisha. Maoni ni ya umma, huonekana kwenye `/msosi`, `/market`,
-   ukurasa wa bidhaa na ukurasa wa muuzaji.
+   anachokikadirisha. Maoni ni ya umma na huonekana kwenye ukurasa wa menyu
+   (`/msosi`), ukurasa wa bidhaa/tangazo (`/product/<id>`) na ukurasa wa biashara
+   (`/duka/<slug>`); maoni ambayo msimamizi alificha (`is_hidden`) hayajumuishwi
+   kwenye wastani wa nyota wala hawaonekani kwa umma.
 
 ### Muuzi
 
@@ -313,6 +326,17 @@ kwenye kadi, pamoja na ujumbe halisi wa Supabase chini yake; tengenezo liko kati
 3. Muuzi huongeza vitu: **Menyu** (`/dashboard/menu`) kwa migahawa, au
    **Matangazo** (`/dashboard/listings`) / **Weka tangazo** (`/post`) kwa bidhaa,
    vyumba na huduma.
+   Fomu ya `/post` hugawanya aina katika makundi matatu — **Bidhaa**, **Vyumba**,
+   **Huduma** — ili mtu asichague kwa makosa. Kundi la mwanzo huamua jinsi tangazo
+   linaonekana kwenye kurasa za umma: bidhaa huenda `/market`, chumba huenda
+   `/vyumba` (na tab ya Vyumba kwenye `/market`), huduma huenda `/services` chini ya
+   utaalamu wake (mf. `phone_repair` → *Urekebishaji wa simu*).
+   Swali la "hali ya bidhaa" (*Mpya · Karibu mpya · Ilitumika*) linaonekana kwa
+   **bidhaa pekee**; vyumba na huduma si vitu vilivyotumika, hivyo fomu hutuma
+   `condition = 'new'` ambayo haiionyeshwi popote. `listings.category` bado ni uwanja
+   huru (hakuna CHECK), kwa hivyo kuongeza utaalamu mpya hakuhitaji mabadiliko ya
+   hifadhidata — orodha iko katika `src/lib/data.ts` (`serviceCategoryIds`) na majina
+   yake katika `src/lib/translations.ts` (`categories`).
 4. Picha hupakiwa kutoka kivinjari moja kwa moja kwenye Supabase Storage
    (`media/<namba-yako>/…`): JPG, PNG au WebP, hadi 5MB kwa picha.
 5. Muuzi hubadilisha hatua za oda (`pending → confirmed → preparing → ready →
@@ -504,6 +528,8 @@ src/components/          fomu, dasibodi, vipande vya UI (LangToggle, HeroSlides)
 src/context/             LanguageContext (hupokea lugha kutoka kwa seva) + AuthContext
 src/lib/                 data, db, i18n, i18n-server, translations, home-slides (orodha ya hero), media, payouts, snippe, supabase/*
 src/proxy.ts           cookie za session na lugha (Next 16: proxy, sio middleware)
+next.config.ts         mipangilio ya picha za nje + maelekezo ya kudumu
+                       (`/msosi/<slug>` → `/duka/<slug>`)
 supabase/schema.sql      jedwali, RLS, triggers, Storage, habari (mpango: jedwali -> kazi -> triggers -> RLS -> Storage)
 ```
 
@@ -557,21 +583,39 @@ where p.id = u.id
   and u.email = 'barua.pepe@msimamizi.com';
 ```
 
-## 10. Meza mpya zinazohitaji schema upya
+## 10. Meza za nyongeza (schema)
 
 Kituo cha udhibiti, ofa, maoni, matangazo na footer ya mitandiko hutegemea meza
 `offers`, `reviews`, `social_links`, `app_settings`, `ad_plans`, `ads` na safu mpya
 (`businesses/menu_items/listings.rating_avg` + `rating_count`,
-`orders.meetup_point`, `orders.discount`, `orders.offer_label`, `orders.offer_id`).
+`orders.scheduled_at`, `orders.meetup_point`, `orders.discount`, `orders.offer_label`,
+`orders.offer_id`).
 
-Mradi uliopo bado hauna hayo, kwa hivyo `/msosi`, `/market`,
-`/dashboard/admin/social` na `/dashboard/admin/reviews` hutoa kosa la database hadi
-schema upya itakapowekwa — hakuna kitu kinachofutwa: `supabase/schema.sql` imetayariwa kwa
-`if not exists` na `drop policy if exists`, kwa hivyo kuendesha faili nzima mara ya
-pili kunaongeza tu meza, safu, policies na triggers ambazo hazipo bado.
+**Mradi huu una meza hizo tayari** — `supabase/schema.sql` ilikuja kwenye Supabase,
+kwa hivyo `/msosi`, `/market`, `/services` na `/vyumba` hutoa `200` badala ya kosa la
+database. Kama una mradi **mpya** (au unahamisha tovuti kwenye Supabase nyingine),
+utaona kosa la database (`42703 column … does not exist`) hadi uweke schema —
+hakuna kitu kinachofutwa: faili imetayariwa kwa `if not exists` na
+`drop policy if exists`, kwa hivyo kuendesha faili nzima mara ya pili kunaongeza tu
+meza, safu, policies na triggers ambazo hazipo bado.
 
 1. Fungua Supabase dashboard → **SQL Editor** → **New query**.
 2. Bandika yaliyomo kote katika `supabase/schema.sql` → **Run**.
 3. Pakia upya tovuti; kurasa zilizotajwa hapo juu huanza kufanya kazi, na
    `/dashboard/admin` huonyesha idadi halisi badala ya paneli ya "hakuna jedwali".
+
+Kurasa za umma zinazopatikana sasa:
+
+| Anwani | Kinachopatikana huko |
+| --- | --- |
+| `/` | Ukurasa wa mwanzo: hero na kadi za mwelekeo (Chakula · Sokoni · Huduma · Vyumba). |
+| `/msosi` | Menyu za migahawa zilidyhinishwa, zikiwemo nyota halisi za vipande na biashara. |
+| `/market` | Matangazo ya bidhaa; tab ya **Vyumba** ndani yake hubadilisha orodha bila kuruka ukurasa. |
+| `/vyumba` | Vyumba pekee, bei ikiandikwa **kwa mwezi**; hakuna kitufe cha kulipa bila kuona chumba. |
+| `/services` | Huduma zenye bei, zikigawanywa kwa utaalamu (fundi simu, kinyozi, shwari, umeme, karatasi, usafi, masomo, uzuri, hesabu, n.k.) pamoja na orodha ya watoa huduma. |
+| `/product/<id>` | Ndani ya tangazo: picha, bei kutoka hifadhidata, maoni na mtoa huduma. |
+| `/duka/<slug>` | Ukurasa wa biashara yoyote — chakula, bidhaa au huduma. (`/msosi/<slug>` haelekezwa huko.) |
+| `/post`, `/post/<id>` | Kuunda au kubadilisha tangazo (fomu hugawanya Bidhaa / Vyumba / Huduma). |
+| `/checkout`, `/orders`, `/orders/<id>` | Kikapu, oda zangu na malipo. |
+| `/news`, `/login`, `/privacy`, `/terms` | Habari za uani, kuingia, faragha na masharti. |
 

@@ -106,7 +106,7 @@ export default function BusinessForm({
 
         <Field label={t.business.slug}>
           <div className="flex items-center rounded-2xl border border-gray-200 bg-white focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-100">
-            <span className="pl-4 text-sm text-gray-400">/msosi/</span>
+            <span className="pl-4 text-sm text-gray-400">/duka/</span>
             <input
               value={slug}
               onChange={(e) => setSlug(slugify(e.target.value))}

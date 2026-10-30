@@ -6,10 +6,14 @@ import { Loader2 } from "lucide-react";
 import PhotoUploader from "@/components/PhotoUploader";
 import { useLanguage } from "@/context/LanguageContext";
 import { createClient } from "@/lib/supabase/client";
-import { marketCategoryIds } from "@/lib/data";
+import {
+  categoryGroup,
+  goodsCategoryIds,
+  roomCategoryIds,
+  serviceCategoryIds,
+  type ListingCategory,
+} from "@/lib/data";
 import type { Business, Listing } from "@/lib/types";
-
-const categories = marketCategoryIds.filter((id) => id !== "all");
 
 export default function ListingForm({
   userId,
@@ -24,12 +28,23 @@ export default function ListingForm({
   const router = useRouter();
   const isEdit = Boolean(listing);
 
+  /** Vyumba na huduma si bidhaa iliyotumika — fomu hujibeba tofauti. */
+  const categoryGroups: { label: string; ids: ListingCategory[] }[] = [
+    { label: t.market.tabGoods, ids: goodsCategoryIds },
+    { label: t.nav.rooms, ids: roomCategoryIds },
+    { label: t.nav.services, ids: serviceCategoryIds },
+  ];
+
   const [businessId, setBusinessId] = useState(
     listing?.business_id ?? businesses[0]?.id ?? "",
   );
   const [title, setTitle] = useState(listing?.title ?? "");
   const [description, setDescription] = useState(listing?.description ?? "");
   const [category, setCategory] = useState(listing?.category ?? "electronics");
+  const groupKind = categoryGroup(category);
+  const isGoods = groupKind === "goods";
+  const isRooms = groupKind === "rooms";
+
   const [condition, setCondition] = useState(listing?.condition ?? "used");
   const [price, setPrice] = useState(listing?.price ? String(listing.price) : "");
   const [negotiable, setNegotiable] = useState(listing?.is_negotiable ?? false);
@@ -61,7 +76,9 @@ export default function ListingForm({
       title: title.trim(),
       description: description.trim(),
       category,
-      condition,
+      // Vyumba na huduma havna "hali" — safu hii ya DB inahitaji thamani,
+      // na hakuna inayoonyeshwa kwa makundi hayo.
+      condition: isGoods ? condition : "new",
       price: priceNumber,
       is_negotiable: negotiable,
       stock: Math.max(0, Number(stock) || 1),
@@ -147,10 +164,14 @@ export default function ListingForm({
             onChange={(e) => setCategory(e.target.value as Listing["category"])}
             className="field"
           >
-            {categories.map((id) => (
-              <option key={id} value={id}>
-                {t.categories[id]}
-              </option>
+            {categoryGroups.map((g) => (
+              <optgroup key={g.label} label={g.label}>
+                {g.ids.map((id) => (
+                  <option key={id} value={id}>
+                    {t.categories[id]}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </Field>
@@ -195,19 +216,29 @@ export default function ListingForm({
           />
         </Field>
 
-        <Field label={t.post.condition}>
-          <select
-            value={condition}
-            onChange={(e) => setCondition(e.target.value as Listing["condition"])}
-            className="field"
-          >
-            {(Object.keys(t.conditions) as (keyof typeof t.conditions)[]).map((key) => (
-              <option key={key} value={key}>
-                {t.conditions[key]}
-              </option>
-            ))}
-          </select>
-        </Field>
+        {isGoods ? (
+          <Field label={t.post.condition}>
+            <select
+              value={condition}
+              onChange={(e) => setCondition(e.target.value as Listing["condition"])}
+              className="field"
+            >
+              {(Object.keys(t.conditions) as (keyof typeof t.conditions)[]).map(
+                (key) => (
+                  <option key={key} value={key}>
+                    {t.conditions[key]}
+                  </option>
+                ),
+              )}
+            </select>
+          </Field>
+        ) : (
+          <Field label={t.post.priceMeans}>
+            <p className="field flex items-center bg-paper-50 text-sm leading-snug text-gray-600">
+              {isRooms ? t.rooms.hint : t.services.priceNote}
+            </p>
+          </Field>
+        )}
 
         <Field label={t.post.stockLabel}>
           <input

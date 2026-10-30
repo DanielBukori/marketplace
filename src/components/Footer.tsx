@@ -36,7 +36,7 @@ export default function Footer({
       title: t.footer.colMarketplace,
       links: [
         { label: t.links.usedItems, href: "/market" },
-        { label: t.links.roomsGhetto, href: "/market" },
+        { label: t.links.roomsGhetto, href: "/vyumba" },
         { label: t.links.postAd, href: "/post" },
       ],
     },

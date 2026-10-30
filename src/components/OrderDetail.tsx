@@ -186,7 +186,7 @@ export default function OrderDetail({
 
         {order.business?.slug && (
           <Link
-            href={`/msosi/${order.business.slug}`}
+            href={`/duka/${order.business.slug}`}
             className="inline-block text-sm font-bold text-primary-700 hover:text-primary-900"
           >
             {t.orders.viewStore}

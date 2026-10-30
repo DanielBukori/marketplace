@@ -17,6 +17,14 @@ const nextConfig: NextConfig = {
   // prerender ya static (cacheComponents) haizingati tena ukweli wa ukurasa.
   cacheComponents: false,
   allowedDevOrigins: devOrigins,
+  // duka = storefront yoyote (kula, bidhaa, huduma). "/msosi" ni neno la chakula
+  // tu, hivyo hatutaki kufanya liwe anwani ya biashara zote. Viungio vilivyoshirikiwa
+  // tayari vinaendelea kufanya kazi kupitia maelekezo haya ya kudumu.
+  async redirects() {
+    return [
+      { source: "/msosi/:slug", destination: "/duka/:slug", permanent: true },
+    ];
+  },
   images: {
     remotePatterns: supabaseUrl
       ? [

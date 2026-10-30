@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { GraduationCap, ShoppingBag, Utensils } from "lucide-react";
+import { BedDouble, GraduationCap, ShoppingBag, Utensils, Wrench } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import HeroSlides from "@/components/HeroSlides";
 import AdStrip from "@/components/AdStrip";
@@ -108,6 +108,40 @@ export default function HomeHero({ ads = [] }: { ads?: Ad[] }) {
           </p>
           <Link href="/market" className={cardCta}>
             <span className="text-primary-700">{t.home.sokoniCta}</span>
+          </Link>
+        </div>
+
+        <div
+          className={cardShell}
+          style={{
+            background: "linear-gradient(160deg, #2a6497 0%, #10497e 100%)",
+          }}
+        >
+          <div className={cardBadge}>{t.home.servicesBadge}</div>
+          <Wrench size={54} className="mb-20" />
+          <h2 className="text-2xl font-bold">{t.home.servicesTitle}</h2>
+          <p className="mb-8 mt-2 text-[15px] leading-relaxed text-white/90">
+            {t.home.servicesDesc}
+          </p>
+          <Link href="/services" className={cardCta}>
+            <span className="text-primary-700">{t.home.servicesCta}</span>
+          </Link>
+        </div>
+
+        <div
+          className={cardShell}
+          style={{
+            background: "linear-gradient(160deg, #c9454a 0%, #a41e22 100%)",
+          }}
+        >
+          <div className={cardBadge}>{t.home.verified}</div>
+          <BedDouble size={54} className="mb-20" />
+          <h2 className="text-2xl font-bold">{t.home.roomsTitle}</h2>
+          <p className="mb-8 mt-2 text-[15px] leading-relaxed text-white/90">
+            {t.home.roomsDesc}
+          </p>
+          <Link href="/vyumba" className={cardCta}>
+            <span className="text-accent-600">{t.home.roomsCta}</span>
           </Link>
         </div>
       </section>

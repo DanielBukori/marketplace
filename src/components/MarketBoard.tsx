@@ -5,11 +5,12 @@ import { ArrowRight, Plus, Search } from "lucide-react";
 import MarketCarousel from "@/components/MarketCarousel";
 import ProductCard from "@/components/ProductCard";
 import { useLanguage } from "@/context/LanguageContext";
-import { browseCategoryIds, marketCategoryIds } from "@/lib/data";
+import { browseCategoryIds, categoryGroup, marketCategoryIds } from "@/lib/data";
 import type { Listing } from "@/lib/types";
 
 export default function MarketBoard({ listings }: { listings: Listing[] }) {
   const { t } = useLanguage();
+  const [tab, setTab] = useState<"goods" | "rooms">("goods");
   const [category, setCategory] = useState("all");
   const [query, setQuery] = useState("");
 
@@ -19,14 +20,18 @@ export default function MarketBoard({ listings }: { listings: Listing[] }) {
     l.title.toLowerCase().includes(needle) ||
     l.description.toLowerCase().includes(needle);
 
-  const rooms = listings.filter(
-    (l) => l.category === "rooms" && matchesSearch(l),
-  );
-  const filtered = listings
-    .filter((l) => matchesSearch(l))
-    .filter((l) => category === "all" || l.category === category);
+  const inTab = (l: Listing) =>
+    tab === "rooms"
+      ? categoryGroup(l.category) === "rooms"
+      : categoryGroup(l.category) !== "rooms";
 
-  const showRooms = category === "all" && rooms.length > 0;
+  const filtered = listings
+    .filter((l) => inTab(l) && matchesSearch(l))
+    .filter((l) => tab === "rooms" || category === "all" || l.category === category);
+
+  const roomsCount = listings.filter(
+    (l) => categoryGroup(l.category) === "rooms",
+  ).length;
 
   return (
     <>
@@ -42,7 +47,9 @@ export default function MarketBoard({ listings }: { listings: Listing[] }) {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={t.market.searchPlaceholder}
+            placeholder={
+              tab === "rooms" ? t.rooms.searchPlaceholder : t.market.searchPlaceholder
+            }
             className="h-16 w-full rounded-full border border-black/5 bg-white pl-14 pr-6 text-[15px] shadow-[0_10px_30px_-24px_rgba(16,24,40,0.6)] placeholder:text-gray-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
           />
         </div>
@@ -54,18 +61,59 @@ export default function MarketBoard({ listings }: { listings: Listing[] }) {
         </Link>
       </div>
 
-      <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
-        {marketCategoryIds.map((id) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setCategory(id)}
-            className={`chip ${category === id ? "chip-active" : ""}`}
-          >
-            {t.categories[id]}
-          </button>
-        ))}
+      <div
+        className="inline-flex rounded-full border border-black/5 bg-white p-1.5 shadow-sm"
+        role="tablist"
+        aria-label={t.market.srTitle}
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "goods"}
+          onClick={() => {
+            setTab("goods");
+            setCategory("all");
+          }}
+          className={`rounded-full px-6 py-2.5 text-sm font-extrabold transition ${
+            tab === "goods"
+              ? "bg-primary-800 text-white shadow"
+              : "text-gray-600 hover:bg-paper-100"
+          }`}
+        >
+          {t.market.tabGoods}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "rooms"}
+          onClick={() => setTab("rooms")}
+          className={`rounded-full px-6 py-2.5 text-sm font-extrabold transition ${
+            tab === "rooms"
+              ? "bg-primary-800 text-white shadow"
+              : "text-gray-600 hover:bg-paper-100"
+          }`}
+        >
+          {t.market.tabRooms}
+          {roomsCount > 0 && (
+            <span className="ml-2 text-xs font-bold opacity-70">{roomsCount}</span>
+          )}
+        </button>
       </div>
+
+      {tab === "goods" && (
+        <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0">
+          {marketCategoryIds.map((id) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setCategory(id)}
+              className={`chip ${category === id ? "chip-active" : ""}`}
+            >
+              {t.categories[id]}
+            </button>
+          ))}
+        </div>
+      )}
 
       <section className="space-y-8">
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -74,8 +122,13 @@ export default function MarketBoard({ listings }: { listings: Listing[] }) {
               {t.market.fresh}
             </p>
             <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-ink-900">
-              {t.market.latest}
+              {tab === "rooms" ? t.market.roomsTitle : t.market.latest}
             </h2>
+            {tab === "rooms" && (
+              <p className="mt-2 max-w-2xl text-[15px] text-gray-500">
+                {t.rooms.hint}
+              </p>
+            )}
           </div>
           <Link
             href="/post"
@@ -102,50 +155,15 @@ export default function MarketBoard({ listings }: { listings: Listing[] }) {
           </div>
         ) : (
           <>
-            {showRooms && (
-              <div className="space-y-5">
-                <div className="flex items-end justify-between gap-4">
-                  <div>
-                    <h3 className="text-2xl font-extrabold tracking-tight text-ink-900">
-                      {t.market.roomsTitle}
-                    </h3>
-                    <p className="mt-1 text-[15px] text-gray-500">
-                      {t.market.roomsDesc}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setCategory("rooms")}
-                    className="inline-flex items-center gap-2 rounded-full border border-black/5 bg-white px-5 py-2.5 text-sm font-bold text-ink-900 shadow-sm transition hover:bg-paper-100"
-                  >
-                    {t.market.viewAll} <ArrowRight size={16} />
-                  </button>
-                </div>
-
-                <div className="no-scrollbar -mx-4 flex gap-5 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
-                  {rooms.map((room) => (
-                    <ProductCard
-                      key={room.id}
-                      listing={room}
-                      widthClass="w-[260px]"
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
             <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
               {filtered.map((listing) => (
-                <ProductCard
-                  key={listing.id}
-                  listing={listing}
-                />
+                <ProductCard key={listing.id} listing={listing} />
               ))}
             </div>
 
             {filtered.length === 0 && (
               <p className="rounded-2xl bg-white p-8 text-center text-[15px] text-gray-500">
-                {t.market.noMatches}
+                {tab === "rooms" && !needle ? t.rooms.empty : t.market.noMatches}
               </p>
             )}
 
@@ -177,7 +195,15 @@ export default function MarketBoard({ listings }: { listings: Listing[] }) {
             <button
               key={id}
               type="button"
-              onClick={() => setCategory(id)}
+              onClick={() => {
+                if (id === "rooms") {
+                  setTab("rooms");
+                  setCategory("all");
+                } else {
+                  setTab("goods");
+                  setCategory(id);
+                }
+              }}
               className="chip"
             >
               {t.categories[id]}

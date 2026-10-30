@@ -25,6 +25,7 @@ export default function Navbar() {
     { href: "/market", label: t.nav.marketplace },
     { href: "/msosi", label: t.nav.food },
     { href: "/services", label: t.nav.services },
+    { href: "/vyumba", label: t.nav.rooms },
     { href: "/news", label: t.nav.news },
   ];
 

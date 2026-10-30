@@ -29,7 +29,9 @@ const REVIEW_FIELDS =
 const ORDER_FIELDS =
   "*, business:businesses(id, name, slug), items:order_items(*)";
 
-export async function getActiveListings(category?: string): Promise<Listing[]> {
+export async function getActiveListings(
+  category?: string | string[],
+): Promise<Listing[]> {
   const supabase = await createClient();
   let query = supabase
     .from("listings")
@@ -37,9 +39,13 @@ export async function getActiveListings(category?: string): Promise<Listing[]> {
     .eq("status", "active")
     .neq("stock", 0)
     .order("published_at", { ascending: false })
-    .limit(60);
+    .limit(120);
 
-  if (category && category !== "all") query = query.eq("category", category);
+  if (Array.isArray(category)) {
+    if (category.length > 0) query = query.in("category", category);
+  } else if (category && category !== "all") {
+    query = query.eq("category", category);
+  }
 
   const { data, error } = await query;
   if (error) throw error;
