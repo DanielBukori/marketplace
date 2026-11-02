@@ -163,6 +163,18 @@ dashboard pekee (si katika `schema.sql` wala `.env.local`).
 
 5. Bonyeza **Save**. Mabadiliko hutumika moja kwa moja — hakuna kitu cha kurestart.
 
+**Tofautisha funguo mbili za Brevo** (moja haina maana bila nyingine):
+
+| Kazi | Fungo | Wapi |
+| --- | --- | --- |
+| Barua pepe za **kuingia** (OTP `{{ .Token }}` na magic link) | **SMTP Key** (`xkeysib-…`) + Login | Supabase dashboard → Authentication → SMTP Settings (hatua 4) |
+| Barua pepe za **oda** (`src/lib/brevo.ts`) | **Email API key** (Transactional) | `.env.local` → `BREVO_API_KEY`, `NOTIFY_EMAIL_FROM` |
+
+Kwa hivyo OTP/link **hayatoki** kwenye code yetu — yanatoka Supabase ikipitia Brevo;
+na ujumbe wa oda hutumwa na programu kupitia API. Akaunti moja ya Brevo inatosha
+zote mbili, lakini lazima uweke funguo zote mbili mahali pake. Ona pia "Ujumbe wa oda"
+katika sehemu 2 na hatua (h) chini ya hii kwa template ya magic link.
+
 Chaguo lingine: Resend (`smtp.resend.com`, port `465`, username `resend`, password `re_…`),
 Mailgun, SendGrid, AWS SES — host/port/username/password pekee ndiyo zinazohitajika.
 
@@ -315,6 +327,51 @@ kwenye kadi, pamoja na ujumbe halisi wa Supabase chini yake; tengenezo liko kati
    (`/msosi`), ukurasa wa bidhaa/tangazo (`/product/<id>`) na ukurasa wa biashara
    (`/duka/<slug>`); maoni ambayo msimamizi alificha (`is_hidden`) hayajumuishwi
    kwenye wastani wa nyota wala hawaonekani kwa umma.
+
+### Ujumbe wa oda: SMS + barua pepe (NextSMS na Brevo)
+
+Kila hatua ya oda hutangazwa kwa **mnunuzi** (SMS + barua pepe) na kwa **muuzi**
+(SMS). Ujumbe hauandikwi kwenye kivinjari: `src/lib/notify.ts` husoma oda
+**kutoka hifadhidata baada ya mabadiliko** (`orders`, `order_items`, `businesses`,
+`profiles`, `app_settings` na barua pepe ya mnunuzi kutoka `auth.users`), kwa hivyo
+nomba zinazotumwa ni zileile muuzi/anwani alizozitoa, si alizozituma mtumiaji.
+
+Hatua zinazowasha ujumbe (`NotifyStage`):
+
+| Hatua | Inayebadilisha | Mnunuzi apokea | Muuzi apokea |
+| --- | --- | --- | --- |
+| `created` | `POST /api/orders` | Karibu + vipande + jumla + njia + muda + kiungo cha kulipa | Oda mpya + vipande + jumla + muda + kiungo cha `/dashboard/orders` |
+| `status` | `POST /api/orders/<id>/status` (muuzi au mnunuzi) | Hali mpya (`t.status`) + maagizo (mf. "Njoo ukichukue") | Hali mpya imethibitishwa |
+| `paid` | webhook ya Snippe au msimamizi | Jumla iliyopokelewa + channel | Anza kuandaa |
+| `failed` | webhook ya Snippe au msimamizi | Malipo hayakufaulu — jaribu tena | Mnunuzi atajaribu tena |
+| `refunded` | msimamizi | Pesa imerejeshwa | Pesa imerejeshwa kwa mnunuzi |
+
+Maandishi: SMS ni fupi lakini ina **jumla, njia (pickup/delivery), muda** (saa ya
+`Africa/Dar_es_Salaam`) na kiungo; barua pepe ni **plain text** kamili — kila kipande
+kwa bei yake, jumla ya vipande, punguzo la ofa, gharama ya delivery, JUMLA YOTE,
+anwani/mahali pa kukutiana, ujumbe wa mnunuzi na kiungo cha `/orders/<id>`. Maneno ya
+hali husomwa kutoka kamusi ileile ya UI (`dictFor("sw")`), kwa hivyo SMS, barua pepe na
+ukurasa havapingani.
+
+Usalama na uhalisia:
+
+- **Kosa la mtoaji halifuti oda.** `notifyOrderStage()` hukamata makosa yote na kurudisha
+  ripoti; oda inabaki imewekwa.
+- **Kila jaribio huandikwa** kwenye `order_events` (`ujumbe: SMS mnunuzi imetumwa,
+  barua pepe imeshindwa (402 …)`) — unaonekana kwenye historia ya oda. Hakuna
+  "imertumwa" isiyo na ushahidi.
+- Funguo zote ni za **seva pekee** (`NEXTSMS_API_TOKEN`, `NEXTSMS_SENDER_ID`,
+  `BREVO_API_KEY`, `NOTIFY_EMAIL_FROM`, `NOTIFY_EMAIL_NAME`). Zikikosekana, ujumbe
+  huzimwa kimya kimya (`isNextSmsConfigured` / `isBrevoConfigured`) na hakuna kitu
+  kinachodhaniwa kimetendeka.
+- Namba ya muuzi hutolewa na `businesses.phone` → `businesses.whatsapp` →
+  `app_settings.support_phone`; namba ya mnunuzi ni `orders.contact_phone`.
+  Nambari zisizo za TZ au fupi hukataliwa kabla ya kuomba SMS (`isUsableMsisdn`).
+- **Gharama ni ya kweli:** bei ya NextSMS iliyoatangazwa wakati wa kuandika hizi ni
+  takriban **TZS 16 kwa SMS moja** nchini TZ, na ujumbe mrekavu hukawanywa katika
+  sehemu nyingi (kila sehemu hulipwa). Oda moja yenye hatua 5 hutuma SMS ~10 (mnunuzi +
+  muuzi) — thibitisha bei yako kwenye dashboard kabla ya kuwasha. Barua pepe ya Brevo
+  iko chini ya mpango wa bure wa transactional emails wa akaunti yako.
 
 ### Muuzi
 

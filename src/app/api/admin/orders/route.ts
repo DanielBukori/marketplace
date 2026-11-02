@@ -4,6 +4,7 @@ import { requireAdminActor } from "@/lib/admin-actor";
 import { createAdminClient, isAdminClientConfigured } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/media";
 import { queuePayoutForPaidOrder } from "@/lib/payouts";
+import { notifyOrderStage, type NotifyStage } from "@/lib/notify";
 import type { SnippeChannel } from "@/lib/snippe";
 import type { Order, OrderStatus, PaymentStatus } from "@/lib/types";
 
@@ -146,5 +147,16 @@ export async function PATCH(request: NextRequest) {
     payoutQueued = Boolean(await queuePayoutForPaidOrder(admin, order, channel));
   }
 
-  return NextResponse.json({ saved: true, payoutQueued });
+  const stage: NotifyStage =
+    action === "status"
+      ? "status"
+      : update.payment_status === "paid"
+        ? "paid"
+        : update.payment_status === "refunded"
+          ? "refunded"
+          : "failed";
+
+  const report = await notifyOrderStage(orderId, stage);
+
+  return NextResponse.json({ saved: true, payoutQueued, notified: report.attempted });
 }

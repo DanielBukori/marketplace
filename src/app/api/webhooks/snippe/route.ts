@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { createAdminClient, isAdminClientConfigured } from "@/lib/supabase/admin";
 import { queuePayoutForPaidOrder } from "@/lib/payouts";
+import { notifyOrderStage } from "@/lib/notify";
 import type { SnippeChannel } from "@/lib/snippe";
 import type { Order } from "@/lib/types";
 
@@ -153,5 +154,12 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ received: true });
+  // Pandende mbili husikia malipo yaliyofaulu au yaliyoshindwa mara moja —
+  // hii ndiyo njia pekee inayojua pesa iliyoingia kweli.
+  const report = await notifyOrderStage(
+    order.id,
+    isPaid ? "paid" : isRefunded ? "refunded" : "failed",
+  );
+
+  return NextResponse.json({ received: true, notified: report.attempted });
 }

@@ -2,7 +2,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { useLanguage } from "@/context/LanguageContext";
 import { formatTzs } from "@/lib/data";
 import type { Order, OrderStatus } from "@/lib/types";
@@ -28,18 +27,28 @@ export default function OrdersInbox({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  /** Hali hubadilishwa na seva ili mnunuzi apokee SMS/barua pepe ya hatua hiyo. */
   async function setStatus(id: string, status: OrderStatus) {
     setBusyId(id);
     setError(null);
-    const supabase = createClient();
-    const { error: updateError } = await supabase
-      .from("orders")
-      .update({ status })
-      .eq("id", id);
-    setBusyId(null);
 
-    if (updateError) setError(updateError.message);
-    else router.refresh();
+    try {
+      const response = await fetch(`/api/orders/${id}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+
+      if (response.ok) router.refresh();
+      else {
+        const body = (await response.json().catch(() => ({}))) as { message?: string };
+        setError(body.message ?? t.common.error);
+      }
+    } catch {
+      setError(t.common.error);
+    } finally {
+      setBusyId(null);
+    }
   }
 
   if (orders.length === 0) {

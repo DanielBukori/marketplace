@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/media";
+import { notifyOrderStage } from "@/lib/notify";
 
 const MAX_QUANTITY = 20;
 const MAX_LEAD_MS = 14 * 24 * 60 * 60 * 1000;
@@ -156,5 +157,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: itemsError.message }, { status: 400 });
   }
 
-  return NextResponse.json({ orderId: order.id, reference: order.reference });
+  // Ujumbe wa oda hutumwa baada ya vipande kuwekwa, kwa sababu jumla na
+  // vipande vinatokana na triggers. Kosa la SMS/barua pepe halifuti oda.
+  const report = await notifyOrderStage(order.id, "created");
+
+  return NextResponse.json({
+    orderId: order.id,
+    reference: order.reference,
+    notified: report.attempted,
+  });
 }

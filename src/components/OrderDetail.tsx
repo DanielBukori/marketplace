@@ -5,11 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, ImageOff } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
-import { createClient } from "@/lib/supabase/client";
 import ReviewComposer from "@/components/ReviewComposer";
 import { mediaUrl } from "@/lib/media";
 import { formatTzs } from "@/lib/data";
-import type { Order, OrderStatus } from "@/lib/types";
+import type { Order } from "@/lib/types";
 
 type Channel = "mpesa" | "airtel" | "mixx" | "halotel";
 
@@ -59,18 +58,28 @@ export default function OrderDetail({
     }
   }
 
+  /** Kubatilisha hupitia seva ili muuzi apokee SMS ya mabadiliko hayo. */
   async function cancel() {
     setBusy(true);
     setNotice(null);
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("orders")
-      .update({ status: "cancelled" as OrderStatus })
-      .eq("id", order.id);
 
-    if (error) setNotice(error.message);
-    else router.refresh();
-    setBusy(false);
+    try {
+      const response = await fetch(`/api/orders/${order.id}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "cancelled" }),
+      });
+
+      if (response.ok) router.refresh();
+      else {
+        const body = (await response.json().catch(() => ({}))) as { message?: string };
+        setNotice(body.message ?? t.common.error);
+      }
+    } catch {
+      setNotice(t.common.error);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
