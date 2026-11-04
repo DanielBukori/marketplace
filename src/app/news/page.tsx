@@ -3,7 +3,13 @@ import { CalendarDays, Megaphone } from "lucide-react";
 import { getAnnouncements } from "@/lib/db";
 import { isSupabaseConfigured } from "@/lib/media";
 import { getT } from "@/lib/i18n-server";
+import { pageMeta } from "@/lib/seo";
 import SetupNotice from "@/components/SetupNotice";
+
+export async function generateMetadata() {
+  const t = await getT();
+  return pageMeta("/news", t.meta.pages.news.title, t.meta.pages.news.desc);
+}
 
 export default async function NewsPage() {
   const t = await getT();
@@ -51,7 +57,7 @@ export default async function NewsPage() {
                 <CalendarDays size={24} />
               </span>
               <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-600">
                   {dayMonthYear(item.event_at ?? item.created_at)}
                 </p>
                 <h2 className="mt-1 text-lg font-extrabold text-ink-900">{item.title}</h2>

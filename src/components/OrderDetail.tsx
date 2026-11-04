@@ -29,7 +29,7 @@ export default function OrderDetail({
   const router = useRouter();
   const [channel, setChannel] = useState<Channel>("mpesa");
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ text: string; bad: boolean } | null>(null);
 
   const canPay =
     isBuyer &&
@@ -49,10 +49,10 @@ export default function OrderDetail({
         body: JSON.stringify({ orderId: order.id, channel }),
       });
       const body = (await response.json()) as { message?: string };
-      setNotice(body.message ?? t.common.error);
+      setNotice({ text: body.message ?? t.common.error, bad: !response.ok });
       if (response.ok) router.refresh();
     } catch {
-      setNotice(t.common.error);
+      setNotice({ text: t.common.error, bad: true });
     } finally {
       setBusy(false);
     }
@@ -73,10 +73,10 @@ export default function OrderDetail({
       if (response.ok) router.refresh();
       else {
         const body = (await response.json().catch(() => ({}))) as { message?: string };
-        setNotice(body.message ?? t.common.error);
+        setNotice({ text: body.message ?? t.common.error, bad: true });
       }
     } catch {
-      setNotice(t.common.error);
+      setNotice({ text: t.common.error, bad: true });
     } finally {
       setBusy(false);
     }
@@ -250,8 +250,13 @@ export default function OrderDetail({
       )}
 
       {notice && (
-        <p className="rounded-2xl bg-primary-50 px-5 py-4 text-sm font-semibold text-primary-800">
-          {notice}
+        <p
+          role={notice.bad ? "alert" : "status"}
+          className={`rounded-2xl px-5 py-4 text-sm font-semibold ${
+            notice.bad ? "bg-accent-100 text-accent-600" : "bg-primary-50 text-primary-800"
+          }`}
+        >
+          {notice.text}
         </p>
       )}
 
@@ -272,7 +277,7 @@ export default function OrderDetail({
             {t.reviews.sectionTitle}
           </h2>
           {order.has_review ? (
-            <p className="rounded-2xl bg-primary-50 px-5 py-4 text-sm font-semibold text-primary-800">
+            <p role="status" className="rounded-2xl bg-primary-50 px-5 py-4 text-sm font-semibold text-primary-800">
               {t.reviews.already}
             </p>
           ) : (
@@ -304,7 +309,7 @@ export default function OrderDetail({
                     {statusLabel(event.status)}
                   </p>
                   {event.note && <p className="text-gray-500">{event.note}</p>}
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-600">
                     {new Date(event.created_at).toLocaleString(t.localeDate)}
                   </p>
                 </div>

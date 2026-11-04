@@ -194,10 +194,17 @@ export default function HeroSlides() {
               onClick={() => setIndex(i)}
               aria-label={(slides[i] ?? slides[0]).title}
               aria-current={i === index ? "true" : undefined}
-              className={`h-1.5 rounded-full transition-all ${
-                i === index ? "w-8 bg-white" : "w-4 bg-white/40 hover:bg-white/70"
-              }`}
-            />
+              className="group flex h-6 w-6 shrink-0 items-center justify-center"
+            >
+              <span
+                aria-hidden
+                className={`block h-1.5 rounded-full transition-all ${
+                  i === index
+                    ? "w-8 bg-white"
+                    : "w-4 bg-white/40 group-hover:bg-white/70"
+                }`}
+              />
+            </button>
           ))}
         </div>
 
@@ -264,7 +271,7 @@ export default function HeroSlides() {
                 {currentCopy.caption}
               </p>
               {current.credit && (
-                <p className="text-xs text-gray-400">{t.home.photoNote}</p>
+                <p className="text-xs text-gray-600">{t.home.photoNote}</p>
               )}
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <Link

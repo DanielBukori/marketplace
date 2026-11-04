@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { userError } from "@/lib/user-error";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -26,7 +27,7 @@ export default function AdsBoard({
   const { t } = useLanguage();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ text: string; bad: boolean } | null>(null);
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
 
@@ -38,9 +39,9 @@ export default function AdsBoard({
       .update(changes)
       .eq("id", ad.id);
 
-    if (error) setNotice(error.message);
+    if (error) setNotice({ text: userError(t, error), bad: true });
     else {
-      setNotice(message);
+      setNotice({ text: message, bad: false });
       router.refresh();
     }
     setBusy(false);
@@ -96,8 +97,13 @@ export default function AdsBoard({
   return (
     <div className="space-y-3">
       {notice && (
-        <p className="rounded-2xl bg-primary-50 px-5 py-4 text-sm font-semibold text-primary-800">
-          {notice}
+        <p
+          role={notice.bad ? "alert" : "status"}
+          className={`rounded-2xl px-5 py-4 text-sm font-semibold ${
+            notice.bad ? "bg-accent-100 text-accent-600" : "bg-primary-50 text-primary-800"
+          }`}
+        >
+          {notice.text}
         </p>
       )}
 
@@ -132,7 +138,7 @@ export default function AdsBoard({
                     {formatTzs(ad.price)}
                   </p>
                   {ad.plan && (
-                    <p className="mt-0.5 text-xs text-gray-400">
+                    <p className="mt-0.5 text-xs text-gray-600">
                       {t.ads.placement[ad.plan.placement]} · {ad.plan.name}
                     </p>
                   )}

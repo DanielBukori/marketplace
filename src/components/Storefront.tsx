@@ -74,7 +74,7 @@ export default function Storefront({
         <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
           <Link
             href="/msosi"
-            className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary-700"
+            className="inline-flex min-h-6 items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary-700"
           >
             <ArrowLeft size={16} /> {t.storefront.backToVendors}
           </Link>
@@ -339,7 +339,7 @@ export default function Storefront({
               about: t.reviews.about,
             }}
           />
-          <p className="text-xs leading-relaxed text-gray-400">{t.reviews.policy}</p>
+          <p className="text-xs leading-relaxed text-gray-600">{t.reviews.policy}</p>
         </section>
       </div>
 

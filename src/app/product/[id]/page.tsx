@@ -17,10 +17,24 @@ import ReviewList from "@/components/ReviewList";
 import StarRating from "@/components/StarRating";
 import { getT } from "@/lib/i18n-server";
 import { notFound } from "next/navigation";
+import { absoluteUrl, clip, jsonLd, pageMeta } from "@/lib/seo";
 
-export async function generateMetadata() {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const listing = await getListing(id);
+  if (!listing) notFound();
+
   const t = await getT();
-  return { title: t.meta.product };
+  return pageMeta(
+    `/product/${listing.id}`,
+    `${listing.title} · ${t.brand.name} ${t.brand.suffix}`,
+    clip(listing.description || t.meta.pages.market.desc),
+    mediaUrl(listing.photo_paths[0]) ?? undefined,
+  );
 }
 
 export default async function ProductPage({
@@ -42,11 +56,41 @@ export default async function ProductPage({
     listing.whatsapp ?? listing.business?.whatsapp ?? listing.business?.phone;
   const phone = listing.business?.phone ?? listing.whatsapp;
 
+  const structured = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: listing.title,
+    description: clip(listing.description || t.meta.pages.market.desc),
+    url: absoluteUrl(`/product/${listing.id}`),
+    image: photos.length > 0 ? photos : undefined,
+    sku: listing.id,
+    brand: { "@type": "Brand", name: listing.business?.name ?? t.brand.name },
+    offers: {
+      "@type": "Offer",
+      price: listing.price,
+      priceCurrency: "TZS",
+      availability: isSold
+        ? "https://schema.org/OutOfStock"
+        : "https://schema.org/InStock",
+      url: absoluteUrl(`/product/${listing.id}`),
+    },
+    ...(listing.rating_count > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: listing.rating_avg,
+            reviewCount: listing.rating_count,
+          },
+        }
+      : {}),
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+      {jsonLd(structured)}
       <Link
         href="/market"
-        className="inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary-700"
+        className="inline-flex min-h-6 items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary-700"
       >
         <ArrowLeft size={16} /> {t.product.backToMarket}
       </Link>
@@ -64,7 +108,7 @@ export default async function ProductPage({
                 className="object-contain"
               />
             ) : (
-              <p className="px-8 text-center text-sm text-gray-400">
+              <p className="px-8 text-center text-sm text-gray-600">
                 {t.product.noPhoto}
               </p>
             )}
@@ -143,7 +187,7 @@ export default async function ProductPage({
                   </p>
                   <Link
                     href={`/duka/${listing.business.slug}`}
-                    className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-primary-700 hover:text-primary-900"
+                    className="mt-3 inline-flex min-h-6 items-center gap-1.5 text-sm font-bold text-primary-700 hover:text-primary-900"
                   >
                     {t.product.sellerStore} <ArrowRight size={15} />
                   </Link>
@@ -233,10 +277,10 @@ export default async function ProductPage({
                 about: t.reviews.about,
               }}
             />
-            <p className="text-xs leading-relaxed text-gray-400">{t.reviews.policy}</p>
+            <p className="text-xs leading-relaxed text-gray-600">{t.reviews.policy}</p>
           </div>
 
-          <p className="mt-10 text-xs leading-relaxed text-gray-400">
+          <p className="mt-10 text-xs leading-relaxed text-gray-600">
             {t.product.safetyTip}
           </p>
         </div>

@@ -1,4 +1,14 @@
 import { getT } from "@/lib/i18n-server";
+import { clip, pageMeta } from "@/lib/seo";
+
+export async function generateMetadata() {
+  const t = await getT();
+  return pageMeta(
+    "/privacy",
+    `${t.privacy.title} · ${t.brand.name} ${t.brand.suffix}`,
+    clip(t.privacy.intro),
+  );
+}
 
 export default async function PrivacyPage() {
   const t = await getT();

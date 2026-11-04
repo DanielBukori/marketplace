@@ -14,6 +14,16 @@ export default function MarketBoard({ listings }: { listings: Listing[] }) {
   const [category, setCategory] = useState("all");
   const [query, setQuery] = useState("");
 
+  const tabs: ("goods" | "rooms")[] = ["goods", "rooms"];
+
+  /** Kadi hupitisha kichwa cha tab kwa mshale — tablist ya WAI-ARIA. */
+  function moveTab(from: number, step: number) {
+    const next = tabs[(from + step + tabs.length) % tabs.length];
+    setTab(next);
+    if (next === "goods") setCategory("all");
+    document.getElementById(`market-tab-${next}`)?.focus();
+  }
+
   const needle = query.trim().toLowerCase();
   const matchesSearch = (l: Listing) =>
     !needle ||
@@ -41,16 +51,17 @@ export default function MarketBoard({ listings }: { listings: Listing[] }) {
         <div className="relative flex-1">
           <Search
             size={20}
-            className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400"
+            className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-600"
           />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            aria-label={tab === "rooms" ? t.rooms.searchPlaceholder : t.market.searchPlaceholder}
             placeholder={
               tab === "rooms" ? t.rooms.searchPlaceholder : t.market.searchPlaceholder
             }
-            className="h-16 w-full rounded-full border border-black/5 bg-white pl-14 pr-6 text-[15px] shadow-[0_10px_30px_-24px_rgba(16,24,40,0.6)] placeholder:text-gray-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
+            className="h-16 w-full rounded-full border border-black/5 bg-white pl-14 pr-6 text-[15px] shadow-[0_10px_30px_-24px_rgba(16,24,40,0.6)] placeholder:text-gray-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
           />
         </div>
         <Link
@@ -69,7 +80,14 @@ export default function MarketBoard({ listings }: { listings: Listing[] }) {
         <button
           type="button"
           role="tab"
+          id="market-tab-goods"
+          aria-controls="market-panel"
           aria-selected={tab === "goods"}
+          tabIndex={tab === "goods" ? 0 : -1}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowRight" || e.key === "ArrowDown")
+              moveTab(0, 1);
+          }}
           onClick={() => {
             setTab("goods");
             setCategory("all");
@@ -85,7 +103,14 @@ export default function MarketBoard({ listings }: { listings: Listing[] }) {
         <button
           type="button"
           role="tab"
+          id="market-tab-rooms"
+          aria-controls="market-panel"
           aria-selected={tab === "rooms"}
+          tabIndex={tab === "rooms" ? 0 : -1}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowLeft" || e.key === "ArrowUp")
+              moveTab(1, -1);
+          }}
           onClick={() => setTab("rooms")}
           className={`rounded-full px-6 py-2.5 text-sm font-extrabold transition ${
             tab === "rooms"
@@ -115,7 +140,12 @@ export default function MarketBoard({ listings }: { listings: Listing[] }) {
         </div>
       )}
 
-      <section className="space-y-8">
+      <section
+        id="market-panel"
+        role="tabpanel"
+        aria-labelledby={tab === "rooms" ? "market-tab-rooms" : "market-tab-goods"}
+        className="space-y-8"
+      >
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary-700">

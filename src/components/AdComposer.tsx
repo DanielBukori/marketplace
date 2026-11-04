@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import { userError } from "@/lib/user-error";
 import { useRouter } from "next/navigation";
 import { Megaphone } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
@@ -52,7 +53,7 @@ export default function AdComposer({
   const [targetUrl, setTargetUrl] = useState("");
   const [imagePath, setImagePath] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ text: string; bad: boolean } | null>(null);
 
   const plan = plans.find((option) => option.id === planId) ?? null;
   const cap = plan?.max_days ?? 365;
@@ -65,15 +66,15 @@ export default function AdComposer({
     setNotice(null);
 
     if (!plan || !businessId) {
-      setNotice(t.ads.pickPlan);
+      setNotice({ text: t.ads.pickPlan, bad: true });
       return;
     }
     if (title.trim().length < 2) {
-      setNotice(t.ads.needTitle);
+      setNotice({ text: t.ads.needTitle, bad: true });
       return;
     }
     if (imagePath.length === 0) {
-      setNotice(t.ads.needImage);
+      setNotice({ text: t.ads.needImage, bad: true });
       return;
     }
 
@@ -91,12 +92,12 @@ export default function AdComposer({
         created_by: userId,
       });
 
-      if (error) setNotice(error.message);
+      if (error) setNotice({ text: userError(t, error), bad: true });
       else {
         setTitle("");
         setTargetUrl("");
         setImagePath([]);
-        setNotice(t.ads.submitted);
+        setNotice({ text: t.ads.submitted, bad: false });
         router.refresh();
       }
     } finally {
@@ -222,11 +223,12 @@ export default function AdComposer({
 
             <label className="block">
               <span className="text-sm font-bold text-ink-900">
-                {t.ads.target} <span className="font-medium text-gray-400">{t.common.optional}</span>
+                {t.ads.target} <span className="font-medium text-gray-600">{t.common.optional}</span>
               </span>
               <input
                 value={targetUrl}
                 onChange={(event) => setTargetUrl(event.target.value)}
+                inputMode="url"
                 maxLength={200}
                 placeholder="/duka/kula-bora"
                 className="field mt-1.5 w-full"
@@ -256,8 +258,13 @@ export default function AdComposer({
             </div>
 
             {notice && (
-              <p className="rounded-2xl bg-primary-50 px-4 py-3 text-sm font-semibold text-primary-800">
-                {notice}
+              <p
+                role={notice.bad ? "alert" : "status"}
+                className={`rounded-2xl px-4 py-3 text-sm font-semibold ${
+                  notice.bad ? "bg-accent-100 text-accent-600" : "bg-primary-50 text-primary-800"
+                }`}
+              >
+                {notice.text}
               </p>
             )}
 

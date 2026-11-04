@@ -6,6 +6,45 @@ import { useLanguage } from "@/context/LanguageContext";
 import BrandIcon, { brandHex, platformLabel } from "@/components/BrandIcon";
 import type { SocialLink } from "@/lib/types";
 
+/**
+ * Mfumo unaoonekana wakati hifadhidata inasoma viungo na mipangilio.
+ * Unashikilia urefu sawa na footer halisi ili ukurasa usiruke chini
+ * (layout shift) data inapofika.
+ */
+export function FooterSkeleton() {
+  const { t } = useLanguage();
+
+  return (
+    <footer className="border-t border-black/5 bg-paper-100">
+      <div className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[1.5fr_1fr_1fr_1fr] lg:px-8">
+        <div className="max-w-sm">
+          <p className="text-2xl font-extrabold tracking-tight text-ink-900">
+            {t.brand.name} <span className="text-primary-600">{t.brand.suffix}</span>
+          </p>
+          <div aria-hidden className="mt-6 space-y-3">
+            <span className="block h-4 w-full animate-pulse rounded-xl bg-paper-200" />
+            <span className="block h-4 w-4/5 animate-pulse rounded-xl bg-paper-200" />
+          </div>
+        </div>
+        {[0, 1, 2].map((i) => (
+          <div key={i} aria-hidden className="space-y-4">
+            <span className="block h-4 w-2/3 animate-pulse rounded-xl bg-paper-200" />
+            <span className="block h-3 w-full animate-pulse rounded-xl bg-paper-200" />
+            <span className="block h-3 w-5/6 animate-pulse rounded-xl bg-paper-200" />
+            <span className="block h-3 w-4/6 animate-pulse rounded-xl bg-paper-200" />
+          </div>
+        ))}
+      </div>
+      <div className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
+        <span
+          aria-hidden
+          className="block h-4 w-56 animate-pulse rounded-xl bg-paper-200"
+        />
+      </div>
+    </footer>
+  );
+}
+
 export default function Footer({
   links = [],
   support = {},
@@ -38,6 +77,7 @@ export default function Footer({
         { label: t.links.usedItems, href: "/market" },
         { label: t.links.roomsGhetto, href: "/vyumba" },
         { label: t.links.postAd, href: "/post" },
+        { label: t.nav.getStarted, href: "/get-started" },
       ],
     },
     {
@@ -52,6 +92,7 @@ export default function Footer({
       title: t.footer.colFood,
       links: [
         { label: t.links.cafeteriaMenus, href: "/msosi" },
+        { label: t.nav.feed, href: "/feed" },
         { label: t.links.orderFood, href: "/msosi" },
         { label: t.links.serviceMall, href: "/services" },
         { label: t.links.news, href: "/news" },
@@ -73,7 +114,7 @@ export default function Footer({
             href="https://iaa.ac.tz"
             target="_blank"
             rel="noreferrer"
-            className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary-700 hover:text-primary-900"
+            className="mt-6 inline-flex min-h-6 items-center gap-2 text-sm font-semibold text-primary-700 hover:text-primary-900"
           >
             <Globe size={17} /> iaa.ac.tz
           </a>
@@ -94,14 +135,14 @@ export default function Footer({
                 </li>
               ))}
               {support.service_hours && (
-                <li className="text-gray-400">{support.service_hours}</li>
+                <li className="text-gray-600">{support.service_hours}</li>
               )}
             </ul>
           )}
 
           {links.length > 0 && (
             <div className="mt-7">
-              <h5 className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400">
+              <h5 className="text-xs font-bold uppercase tracking-[0.14em] text-gray-600">
                 {t.footer.followUs}
               </h5>
               <ul className="mt-3 flex flex-wrap gap-2.5">
@@ -133,7 +174,10 @@ export default function Footer({
             <ul className="space-y-4 text-[15px] text-gray-500">
               {column.links.map((l) => (
                 <li key={l.label}>
-                  <Link href={l.href} className="transition hover:text-primary-700">
+                  <Link
+                    href={l.href}
+                    className="inline-flex min-h-6 items-center transition hover:text-primary-700"
+                  >
                     {l.label}
                   </Link>
                 </li>
@@ -150,10 +194,10 @@ export default function Footer({
         </p>
 
         <div className="flex flex-wrap items-center gap-7 text-sm text-gray-500">
-          <Link href="/privacy" className="hover:text-ink-900">
+          <Link href="/privacy" className="inline-flex min-h-6 items-center hover:text-ink-900">
             {t.footer.privacy}
           </Link>
-          <Link href="/terms" className="hover:text-ink-900">
+          <Link href="/terms" className="inline-flex min-h-6 items-center hover:text-ink-900">
             {t.footer.terms}
           </Link>
         </div>

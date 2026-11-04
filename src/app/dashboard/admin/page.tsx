@@ -4,13 +4,15 @@ import {
   FileText,
   LifeBuoy,
   Megaphone,
+  MapPin,
   Settings2,
   Share2,
   ShieldCheck,
   Star,
+  Truck,
   Wallet,
 } from "lucide-react";
-import { getAdminStats } from "@/lib/db";
+import { countCourierRequests, getAdminStats } from "@/lib/db";
 import { getT } from "@/lib/i18n-server";
 import { isSupabaseConfigured } from "@/lib/media";
 import RequireAdmin from "@/components/RequireAdmin";
@@ -29,6 +31,8 @@ export default async function AdminHomePage() {
     stats = null;
   }
 
+  const courierRequests = await countCourierRequests();
+
   const tiles = [
     {
       href: "/dashboard/admin/support",
@@ -37,6 +41,22 @@ export default async function AdminHomePage() {
       desc: t.hub.supportDesc,
       badge: stats ? stats.openOrders : null,
       badgeLabel: t.hub.openNow,
+    },
+    {
+      href: "/dashboard/zones",
+      icon: MapPin,
+      title: t.zones.title,
+      desc: t.zones.desc,
+      badge: null,
+      badgeLabel: null,
+    },
+    {
+      href: "/dashboard/couriers",
+      icon: Truck,
+      title: t.courier.requestsTitle,
+      desc: t.courier.requestsDesc,
+      badge: courierRequests > 0 ? courierRequests : null,
+      badgeLabel: t.hub.waiting,
     },
     {
       href: "/dashboard/admin/reviews",

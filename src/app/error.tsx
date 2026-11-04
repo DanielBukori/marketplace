@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -29,16 +30,28 @@ export default function AppError({
       <p className="mt-3 text-[15px] leading-relaxed text-gray-500">
         {schemaMissing ? t.error.schemaHint : t.error.desc}
       </p>
-      <p className="mx-auto mt-5 max-w-xl break-words rounded-2xl bg-white px-5 py-4 text-left text-sm text-gray-600 shadow-sm">
-        {error.message || t.error.noMessage}
-      </p>
-      <button
-        type="button"
-        onClick={reset}
-        className="mt-7 inline-flex rounded-full bg-primary-800 px-7 py-3 text-sm font-bold text-white transition hover:bg-primary-900"
-      >
-        {t.common.retry}
-      </button>
+
+      {process.env.NODE_ENV === "development" && (
+        <p className="mx-auto mt-5 max-w-xl break-words rounded-2xl bg-white px-5 py-4 text-left font-mono text-xs text-gray-600 shadow-sm">
+          {error.message || t.error.noMessage}
+        </p>
+      )}
+
+      <div className="mt-7 flex flex-wrap justify-center gap-3">
+        <button
+          type="button"
+          onClick={reset}
+          className="inline-flex rounded-full bg-primary-800 px-7 py-3 text-sm font-bold text-white transition hover:bg-primary-900"
+        >
+          {t.common.retry}
+        </button>
+        <Link
+          href="/"
+          className="inline-flex rounded-full border border-black/10 bg-white px-7 py-3 text-sm font-bold text-ink-900 transition hover:bg-paper-100"
+        >
+          {t.error.home}
+        </Link>
+      </div>
     </div>
   );
 }

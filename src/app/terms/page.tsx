@@ -1,4 +1,14 @@
 import { getT } from "@/lib/i18n-server";
+import { clip, pageMeta } from "@/lib/seo";
+
+export async function generateMetadata() {
+  const t = await getT();
+  return pageMeta(
+    "/terms",
+    `${t.terms.title} · ${t.brand.name} ${t.brand.suffix}`,
+    clip(t.terms.intro),
+  );
+}
 
 export default async function TermsPage() {
   const t = await getT();

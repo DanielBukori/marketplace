@@ -4,7 +4,13 @@ import { getActiveListings } from "@/lib/db";
 import { getT } from "@/lib/i18n-server";
 import { isSupabaseConfigured } from "@/lib/media";
 import { roomCategoryIds } from "@/lib/data";
+import { pageMeta } from "@/lib/seo";
 import type { Listing } from "@/lib/types";
+
+export async function generateMetadata() {
+  const t = await getT();
+  return pageMeta("/vyumba", t.meta.pages.rooms.title, t.meta.pages.rooms.desc);
+}
 
 export default async function RoomsPage() {
   const t = await getT();

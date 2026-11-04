@@ -1,5 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { userError } from "@/lib/user-error";
 import { useState, type FormEvent } from "react";
 import { Loader2, Percent, Trash2 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
@@ -76,7 +77,7 @@ export default function OfferManager({
     setBusy(false);
 
     if (insertError) {
-      setError(insertError.message);
+      setError(userError(t, insertError));
       return;
     }
 
@@ -94,7 +95,7 @@ export default function OfferManager({
       .from("offers")
       .update(changes)
       .eq("id", id);
-    if (updateError) setError(updateError.message);
+    if (updateError) setError(userError(t, updateError));
     else router.refresh();
   }
 
@@ -105,7 +106,7 @@ export default function OfferManager({
       .from("offers")
       .delete()
       .eq("id", id);
-    if (deleteError) setError(deleteError.message);
+    if (deleteError) setError(userError(t, deleteError));
     else router.refresh();
   }
 
@@ -199,7 +200,7 @@ export default function OfferManager({
         </div>
 
         {error && (
-          <p className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600">{error}</p>
+          <p role="alert" className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600">{error}</p>
         )}
 
         <button
@@ -238,7 +239,7 @@ export default function OfferManager({
                   {Number(offer.min_items_total) > 0 &&
                     ` · ${fill(t.offer.minNote, { min: formatTzs(Number(offer.min_items_total)) })}`}
                 </p>
-                <p className="mt-0.5 text-xs text-gray-400">
+                <p className="mt-0.5 text-xs text-gray-600">
                   {new Date(offer.starts_at).toLocaleString(t.localeDate)}
                   {offer.ends_at
                     ? ` → ${new Date(offer.ends_at).toLocaleString(t.localeDate)}`

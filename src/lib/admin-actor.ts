@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import type { Dict } from "@/lib/translations";
 
 /**
  * Malizo ya msimamizi kwenye njia za API. RLS inazuia tu kusoma, lakini
  * matendo kama kuthibitisha malipo huhitaji seva (service_role), kwa hivyo
  * lazima thibitisha kwanza kwamba aliyeomba ana daraja la usimamizi.
+ *
+ * `t` hutumika kwa sababu msomaji wa ujumbe huu ni binadamu aliye kwenye
+ * kivinjari — lugha yake ndiyo huamua nakala, si Kiswahili pekee.
  */
-export async function requireAdminActor(): Promise<
-  { error: NextResponse } | { ok: true; userId: string }
-> {
+export async function requireAdminActor(
+  t: Dict,
+): Promise<{ error: NextResponse } | { ok: true; userId: string }> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -16,7 +20,7 @@ export async function requireAdminActor(): Promise<
 
   if (!user) {
     return {
-      error: NextResponse.json({ message: "Ingia kwanza." }, { status: 401 }),
+      error: NextResponse.json({ message: t.api.signInFirst }, { status: 401 }),
     } as const;
   }
 
@@ -28,7 +32,7 @@ export async function requireAdminActor(): Promise<
 
   if (!profile?.is_admin) {
     return {
-      error: NextResponse.json({ message: "Hati hii ni ya msimamizi." }, { status: 403 }),
+      error: NextResponse.json({ message: t.api.adminOnly }, { status: 403 }),
     } as const;
   }
 

@@ -26,14 +26,15 @@ export default function RoomsBoard({ listings }: { listings: Listing[] }) {
         <div className="relative flex-1">
           <Search
             size={20}
-            className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400"
+            className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-600"
           />
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            aria-label={t.rooms.searchPlaceholder}
             placeholder={t.rooms.searchPlaceholder}
-            className="h-16 w-full rounded-full border border-black/5 bg-white pl-14 pr-6 text-[15px] shadow-[0_10px_30px_-24px_rgba(16,24,40,0.6)] placeholder:text-gray-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
+            className="h-16 w-full rounded-full border border-black/5 bg-white pl-14 pr-6 text-[15px] shadow-[0_10px_30px_-24px_rgba(16,24,40,0.6)] placeholder:text-gray-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
           />
         </div>
         <Link

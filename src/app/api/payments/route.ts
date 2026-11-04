@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getT } from "@/lib/i18n-server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient, isAdminClientConfigured } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/media";
@@ -10,8 +11,10 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const channels: SnippeChannel[] = ["mpesa", "airtel", "mixx", "halotel"];
 
 export async function POST(request: NextRequest) {
+  const t = await getT();
+
   if (!isSupabaseConfigured) {
-    return NextResponse.json({ message: "Hifadhidata haijaunganishwa." }, { status: 503 });
+    return NextResponse.json({ message: t.api.dbNotConfigured }, { status: 503 });
   }
 
   const supabase = await createClient();
@@ -20,15 +23,12 @@ export async function POST(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ message: "Ingia kwanza kabla ya kulipa." }, { status: 401 });
+    return NextResponse.json({ message: t.api.signInToPay }, { status: 401 });
   }
 
   if (!isSnippeConfigured || !isAdminClientConfigured) {
     return NextResponse.json(
-      {
-        message:
-          "Malipo ya simu hayijaunganishwa bado. Lipa mikononi kwa muuzi wakati unapochukua oda.",
-      },
+      { message: t.api.paymentsNotConfigured },
       { status: 503 },
     );
   }
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ message: "Ombi halinasoma." }, { status: 400 });
+    return NextResponse.json({ message: t.api.badRequest }, { status: 400 });
   }
 
   const orderId = String(body.orderId ?? "");
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     : null;
 
   if (!UUID.test(orderId) || !channel) {
-    return NextResponse.json({ message: "Chagua njia ya malipo." }, { status: 400 });
+    return NextResponse.json({ message: t.api.chooseChannel }, { status: 400 });
   }
 
   // Oda isomwe kwa seva: RLS ingemwonyesha mnunuzi yake pekee, lakini
@@ -63,33 +63,33 @@ export async function POST(request: NextRequest) {
     | null;
 
   if (!order) {
-    return NextResponse.json({ message: "Oda haipatikani." }, { status: 404 });
+    return NextResponse.json({ message: t.api.orderNotFound }, { status: 404 });
   }
   if (order.buyer_id !== user.id) {
-    return NextResponse.json({ message: "Oda hii si yako." }, { status: 403 });
+    return NextResponse.json({ message: t.api.orderNotYours }, { status: 403 });
   }
   if (order.business && order.business.is_active === false) {
-    return NextResponse.json({ message: "Biashara hii imefungwa." }, { status: 400 });
+    return NextResponse.json({ message: t.api.businessClosed }, { status: 400 });
   }
   if (order.status === "cancelled") {
-    return NextResponse.json({ message: "Oda hii imeghairiwa." }, { status: 400 });
+    return NextResponse.json({ message: t.api.orderCancelled }, { status: 400 });
   }
   if (order.payment_status === "paid") {
     return NextResponse.json({
       paymentStatus: "paid",
-      message: "Oda hii tayari imelipwa.",
+      message: t.api.orderAlreadyPaid,
     });
   }
 
   const amount = Number(order.total);
   if (!Number.isFinite(amount) || amount <= 0) {
-    return NextResponse.json({ message: "Jumla ya oda si sahihi." }, { status: 400 });
+    return NextResponse.json({ message: t.api.totalMismatch }, { status: 400 });
   }
 
   const phone = String(body.phone ?? order.contact_phone ?? "").replace(/[^\d+]/g, "");
   if (phone.replace(/\D/g, "").length < 9) {
     return NextResponse.json(
-      { message: "Hakuna namba ya simu sahihi kwenye oda hii." },
+      { message: t.api.noPhoneOnOrder },
       { status: 400 },
     );
   }
@@ -127,6 +127,6 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     paymentStatus: "awaiting_payment",
-    message: "Tumekutumia ombi la malipo kwenye simu yako. Kamilisha USSD push.",
+    message: t.api.ussdSent,
   });
 }

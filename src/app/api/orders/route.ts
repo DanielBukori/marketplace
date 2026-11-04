@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getT } from "@/lib/i18n-server";
 import { createClient } from "@/lib/supabase/server";
+import { getZonesForBusiness } from "@/lib/db";
 import { isSupabaseConfigured } from "@/lib/media";
 import { notifyOrderStage } from "@/lib/notify";
+import { userError } from "@/lib/user-error";
 
 const MAX_QUANTITY = 20;
 const MAX_LEAD_MS = 14 * 24 * 60 * 60 * 1000;
@@ -10,8 +13,10 @@ const CLOCK_SLACK_MS = 5 * 60 * 1000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function POST(request: NextRequest) {
+  const t = await getT();
+
   if (!isSupabaseConfigured) {
-    return NextResponse.json({ message: "Hifadhidata haijaunganishwa." }, { status: 503 });
+    return NextResponse.json({ message: t.api.dbNotConfigured }, { status: 503 });
   }
 
   const supabase = await createClient();
@@ -20,14 +25,14 @@ export async function POST(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ message: "Ingia kwanza kabla ya kuweka oda." }, { status: 401 });
+    return NextResponse.json({ message: t.api.signInToOrder }, { status: 401 });
   }
 
   let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ message: "Ombi halinasoma." }, { status: 400 });
+    return NextResponse.json({ message: t.api.badRequest }, { status: 400 });
   }
 
   const businessId = String(body.businessId ?? "");
@@ -54,19 +59,38 @@ export async function POST(request: NextRequest) {
   const note = String(body.note ?? "").slice(0, 300);
 
   if (!UUID.test(businessId) || items.length === 0) {
-    return NextResponse.json({ message: "Chagua angalayo kipande kimoja." }, { status: 400 });
+    return NextResponse.json({ message: t.api.chooseAtLeastOne }, { status: 400 });
   }
   if (contactPhone.replace(/\D/g, "").length < 9) {
     return NextResponse.json(
-      { message: "Weka namba ya simu inayoweza kupigwa." },
+      { message: t.api.needPhone },
       { status: 400 },
     );
   }
   if (deliveryMethod === "delivery" && deliveryAddress.trim().length < 5) {
     return NextResponse.json(
-      { message: "Weka anwani ambayo muuzi atakupigia." },
+      { message: t.api.needAddress },
       { status: 400 },
     );
+  }
+
+  // Eneo la upelekezaji linachaguliwa kutoka orodha ya msimamizi. Ikiwa
+  // msimamizi hujaongeza maeneo yoyote, oda huendelea kwa anwani tu —
+  // hapana ukwasi kwa mnunuzi kwa sababu ya mpangilio uliokosekana.
+  let deliveryZoneId: string | null = null;
+  if (deliveryMethod === "delivery") {
+    const zones = await getZonesForBusiness(businessId);
+    const rawZone = String(body.deliveryZoneId ?? "");
+
+    if (zones && zones.length > 0) {
+      if (!UUID.test(rawZone)) {
+        return NextResponse.json({ message: t.checkout.zoneRequired }, { status: 400 });
+      }
+      if (!zones.some((zone) => zone.id === rawZone)) {
+        return NextResponse.json({ message: t.api.zoneUnavailable }, { status: 400 });
+      }
+      deliveryZoneId = rawZone;
+    }
   }
 
   // Mnunuzi huomba saa, lakini muda halisi unakaguliwa hapa: hauwezi
@@ -77,20 +101,20 @@ export async function POST(request: NextRequest) {
     const wanted = Date.parse(String(rawScheduled));
     if (Number.isNaN(wanted)) {
       return NextResponse.json(
-        { message: "Muda uliouchagua haomasomiki." },
+        { message: t.api.timeUnreadable },
         { status: 400 },
       );
     }
     const now = Date.now();
     if (wanted < now - CLOCK_SLACK_MS) {
       return NextResponse.json(
-        { message: "Chagua muda ujaokuja, si uliopita." },
+        { message: t.api.chooseFutureTime },
         { status: 400 },
       );
     }
     if (wanted > now + MAX_LEAD_MS) {
       return NextResponse.json(
-        { message: "Usizidi wiki mbili mbele." },
+        { message: t.api.maxTwoWeeks },
         { status: 400 },
       );
     }
@@ -132,6 +156,7 @@ export async function POST(request: NextRequest) {
   if (scheduledAt) newOrder.scheduled_at = scheduledAt;
   if (meetupPoint) newOrder.meetup_point = meetupPoint;
   if (offerId) newOrder.offer_id = offerId;
+  if (deliveryZoneId) newOrder.delivery_zone_id = deliveryZoneId;
 
   const { data: order, error: orderError } = await supabase
     .from("orders")
@@ -140,7 +165,8 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (orderError || !order) {
-    return NextResponse.json({ message: orderError?.message ?? "Oda haikawezekana." }, { status: 400 });
+    const message = orderError ? userError(t, orderError) : t.api.orderFailed;
+    return NextResponse.json({ message }, { status: 400 });
   }
 
   const { error: itemsError } = await supabase.from("order_items").insert(
@@ -154,7 +180,7 @@ export async function POST(request: NextRequest) {
 
   if (itemsError) {
     await supabase.from("orders").delete().eq("id", order.id);
-    return NextResponse.json({ message: itemsError.message }, { status: 400 });
+    return NextResponse.json({ message: userError(t, itemsError) }, { status: 400 });
   }
 
   // Ujumbe wa oda hutumwa baada ya vipande kuwekwa, kwa sababu jumla na

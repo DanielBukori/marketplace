@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { userError } from "@/lib/user-error";
 import { useRouter } from "next/navigation";
 import { LoaderCircle, Plus, Trash2 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
@@ -26,7 +27,7 @@ export default function AdPlansManager({ plans }: { plans: AdPlan[] }) {
   const router = useRouter();
   const [draft, setDraft] = useState(emptyDraft());
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ text: string; bad: boolean } | null>(null);
 
   const numbers = [draft.perDay, draft.perWeek, draft.perMonth].map(Number);
   const invalid = numbers.some((value) => Number.isNaN(value) || value < 0);
@@ -41,11 +42,11 @@ export default function AdPlansManager({ plans }: { plans: AdPlan[] }) {
   async function add() {
     setNotice(null);
     if (draft.name.trim().length < 2) {
-      setNotice(t.adPlan.needName);
+      setNotice({ text: t.adPlan.needName, bad: true });
       return;
     }
     if (invalid) {
-      setNotice(t.adPlan.needPrices);
+      setNotice({ text: t.adPlan.needPrices, bad: true });
       return;
     }
 
@@ -62,10 +63,10 @@ export default function AdPlansManager({ plans }: { plans: AdPlan[] }) {
       sort_order: plans.length,
     });
 
-    if (error) setNotice(error.message);
+    if (error) setNotice({ text: userError(t, error), bad: true });
     else {
       setDraft(emptyDraft());
-      setNotice(t.adPlan.saved);
+      setNotice({ text: t.adPlan.saved, bad: false });
       router.refresh();
     }
     setBusy(false);
@@ -78,7 +79,7 @@ export default function AdPlansManager({ plans }: { plans: AdPlan[] }) {
       .update({ is_active: !plan.is_active })
       .eq("id", plan.id);
 
-    if (error) setNotice(error.message);
+    if (error) setNotice({ text: userError(t, error), bad: true });
     else router.refresh();
     setBusy(false);
   }
@@ -91,7 +92,7 @@ export default function AdPlansManager({ plans }: { plans: AdPlan[] }) {
       .delete()
       .eq("id", plan.id);
 
-    if (error) setNotice(error.message);
+    if (error) setNotice({ text: userError(t, error), bad: true });
     else router.refresh();
     setBusy(false);
   }
@@ -140,7 +141,7 @@ export default function AdPlansManager({ plans }: { plans: AdPlan[] }) {
         <label className="block">
           <span className="text-sm font-bold text-ink-900">
             {t.adPlan.description}{" "}
-            <span className="font-medium text-gray-400">{t.common.optional}</span>
+            <span className="font-medium text-gray-600">{t.common.optional}</span>
           </span>
           <input
             value={draft.description}
@@ -180,8 +181,13 @@ export default function AdPlansManager({ plans }: { plans: AdPlan[] }) {
         </div>
 
         {notice && (
-          <p className="rounded-2xl bg-primary-50 px-4 py-3 text-sm font-semibold text-primary-800">
-            {notice}
+          <p
+            role={notice.bad ? "alert" : "status"}
+            className={`rounded-2xl px-4 py-3 text-sm font-semibold ${
+              notice.bad ? "bg-accent-100 text-accent-600" : "bg-primary-50 text-primary-800"
+            }`}
+          >
+            {notice.text}
           </p>
         )}
 

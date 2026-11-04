@@ -3,12 +3,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import {
+  ClipboardList,
   LayoutDashboard,
   LogOut,
   Megaphone,
   Menu,
   Plus,
   ShieldCheck,
+  Store,
+  Truck,
   User,
   X,
 } from "lucide-react";
@@ -18,21 +21,33 @@ import LangToggle from "@/components/LangToggle";
 
 export default function Navbar() {
   const { t } = useLanguage();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, isSeller, isCourier, signOut } = useAuth();
   const [open, setOpen] = useState(false);
 
   const links = [
     { href: "/market", label: t.nav.marketplace },
     { href: "/msosi", label: t.nav.food },
+    { href: "/feed", label: t.nav.feed },
     { href: "/services", label: t.nav.services },
     { href: "/vyumba", label: t.nav.rooms },
     { href: "/news", label: t.nav.news },
   ];
 
+  // Kila rol inaona njia zake. Kununua hufanyika na kila mtu, kwa hivyo
+  // "Oda zangu" na "Wasifu" haitegemei rol yoyote.
   const accountLinks = [
     { href: "/dashboard", label: t.nav.account, icon: LayoutDashboard },
-    { href: "/dashboard/ads", label: t.nav.myAds, icon: Megaphone },
-    { href: "/orders", label: t.nav.myOrders, icon: User },
+    { href: "/orders", label: t.nav.myOrders, icon: ClipboardList },
+    { href: "/profile", label: t.nav.profile, icon: User },
+    ...(isSeller
+      ? [
+          { href: "/dashboard/orders", label: t.dashboard.vendorOrders, icon: Store },
+          { href: "/dashboard/ads", label: t.nav.myAds, icon: Megaphone },
+        ]
+      : []),
+    ...(isCourier
+      ? [{ href: "/dashboard/courier", label: t.nav.courierWork, icon: Truck }]
+      : []),
     ...(profile?.is_admin
       ? [{ href: "/dashboard/admin", label: t.nav.admin, icon: ShieldCheck }]
       : []),
@@ -141,6 +156,14 @@ export default function Navbar() {
             ))}
 
             <Link
+              href="/get-started"
+              onClick={() => setOpen(false)}
+              className="rounded-2xl px-4 py-3 text-[15px] font-semibold text-gray-700 transition hover:bg-primary-50 hover:text-primary-800"
+            >
+              {t.nav.getStarted}
+            </Link>
+
+            <Link
               href="/post"
               onClick={() => setOpen(false)}
               className="mt-1 flex items-center gap-2 rounded-2xl bg-accent-500 px-4 py-3 text-[15px] font-extrabold text-white transition hover:bg-accent-400"
@@ -150,7 +173,7 @@ export default function Navbar() {
 
             {user ? (
               <>
-                <p className="mt-3 px-4 text-xs font-bold uppercase tracking-[0.14em] text-gray-400">
+                <p className="mt-3 px-4 text-xs font-bold uppercase tracking-[0.14em] text-gray-600">
                   {t.nav.account}
                 </p>
                 {accountLinks.map((item) => {

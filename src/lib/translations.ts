@@ -12,6 +12,30 @@ const sw = {
     description:
       "Soko la IAA Arusha: nunua na uza bidhaa, patafuta huduma na agiza chakula kwa mobile money. Wauzaji wote wanakubalika, lakini wanafunzi ndio walengwa wa kwanza.",
     product: "Tangazo · IAA Marketplace",
+    pages: {
+      market: {
+        title: "Sokoni — bidhaa na vyumba · IAA Marketplace",
+        desc: "Matangazo ya wauzaji wa IAA Arusha: bidhaa za mkononi, vyumba vya kukodiwa na huduma. Bei na picha hutoka kwa mmiliki wa tangazo mwenyewe.",
+      },
+      food: {
+        title: "Msosi Fasta — chakula cha uani · IAA Marketplace",
+        desc: "Menyu halisi za wauzaji wa chakula wa IAA Arusha. Agiza kwa mobile money, kaa ukumbini au ulipeleke sehemu ulipo.",
+      },
+      services: {
+        title: "Ujuzi na huduma kwa wateja · IAA Marketplace",
+        desc: "Fundi simu, kinyozi, ushonaji na huduma nyingine zinazotolewa na wauzaji wanaojiandikisha wenyewe, kila mmoja akiweka bei yake.",
+      },
+      rooms: {
+        title: "Vyumba na makazi karibu na IAA · IAA Marketplace",
+        desc: "Vyumba, nafasi za hosteli na makazi yanayopangishwa na mmiliki mwenyewe, kwa bei ya mwezi.",
+      },
+      news: {
+        title: "Habari na matukio ya uani · IAA Marketplace",
+        desc: "Chapisho za msimamizi wa IAA Marketplace kuhusu matukio na mipangilio ya uani.",
+      },
+      storeFallback:
+        "Menyu, bidhaa na oda kutoka kwa muuzi huyu wa IAA Marketplace, Arusha.",
+    },
   },
   nav: {
     marketplace: "Sokoni",
@@ -19,12 +43,16 @@ const sw = {
     services: "Huduma",
     rooms: "Vyumba",
     news: "Habari & Matukio",
+    feed: "Mlisho",
+    getStarted: "Jinsi ya kuanza",
     signIn: "Ingia",
     signOut: "Toka",
     post: "Weka tangazo",
     account: "Akaunti",
     myAds: "Matangazo yangu",
     myOrders: "Oda zangu",
+    profile: "Wasifu",
+    courierWork: "Kazi za usabishi",
     admin: "Udhibiti",
     openMenu: "Fungua menyu",
     closeMenu: "Funga menyu",
@@ -383,6 +411,7 @@ const sw = {
   orders: {
     title: "Oda zangu",
     listDesc: "Hali ya kila oda inasasishwa na muuzi mara moja.",
+    statusAria: "Badilisha hali ya oda hii",
     backToList: "Rudi kwenye oda zangu",
     integrityNote:
       "Bei, jumla na hali ya malipo huandikwa na hifadhidata — kivinjari hakiwezi kuzibadilisha.",
@@ -412,6 +441,69 @@ const sw = {
       "Malipo ya simu hayajaanzishwa bado. Lipa mikononi kwa muuzi unapochukua oda.",
     statusUpdated: "Hali yamebadilishwa",
   },
+  /**
+   * Ujumbe wa njia za API. Msomaji wa ujumbe huu ni binadamu aliye kwenye
+   * kivinjari — kwa hivyo hutafsiriwa kwa lugha aliyoichagua, si Kiswahili
+   * pekee. Nakala za env-var (mfano "SUPABASE_SERVICE_ROLE_KEY") hazipo hapa
+   * kwa sababu husomwa na mfanyakazi wa mfumo tu.
+   */
+  api: {
+    dbNotConfigured: "Hifadhidata haijaunganishwa.",
+    badRequest: "Ombi halinasoma.",
+    bodyNotJson: "Mwili si JSON.",
+    unknownStage: "Hatua hiyo haijulikani.",
+    unknownAction: "Kitendo hakijutikana.",
+    unknownPaymentStatus: "Hali ya malipo haijulikani.",
+    signInFirst: "Ingia kwanza.",
+    signInToOrder: "Ingia kwanza kabla ya kuweka oda.",
+    signInToPay: "Ingia kwanza kabla ya kulipa.",
+    noPermission: "Huna ruhusa ya oda hii.",
+    adminOnly: "Hati hii ni ya msimamizi.",
+    courierOnly: "Kitendo hiki ni cha msabishi aliyeidhinishwa.",
+    zoneUnavailable: "Eneo hilo halipatikani au haliko hai.",
+    courierNotApproved: "Msabishi huyo haijaidhinishwa.",
+    pickupNoCourier: "Oda hii huchukuliwa mwenyewe — hakuna cha kupanga msabishi.",
+    buyerCancelOnly: "Kama mnunuzi unaweza kubatilisha oda tu.",
+    orderNotFound: "Oda haipatikani.",
+    orderNotYours: "Oda hii si yako.",
+    orderNotFoundForYou: "Oda haipatikani kwako.",
+    orderUnrecognised: "Oda haijulikani.",
+    badOrderId: "Kitambulisho cha oda si sahihi.",
+    badId: "Kitambulisho si sahihi.",
+    totalMismatch: "Jumla ya oda si sahihi.",
+    chooseAtLeastOne: "Chagua angalayo kipande kimoja.",
+    chooseChannel: "Chagua njia ya malipo.",
+    chooseFutureTime: "Chagua muda ujaokuja, si uliopita.",
+    timeUnreadable: "Muda uliouchagua haomasomiki.",
+    maxTwoWeeks: "Usizidi wiki mbili mbele.",
+    needPhone: "Weka namba ya simu inayoweza kupigwa.",
+    needAddress: "Weka anwani ambayo muuzi atakupigia.",
+    needSellerPhone: "Weka namba sahihi ya muuzi.",
+    sellerPhoneOnPayout:
+      "Ongeza namba ya muuzi kwenye foli hii kabla ya kutuma.",
+    noPhoneOnOrder: "Hakuna namba ya simu sahihi kwenye oda hii.",
+    businessClosed: "Biashara hii imefungwa.",
+    orderCancelled: "Oda hii imeghairiwa.",
+    orderAlreadyPaid: "Oda hii tayari imelipwa.",
+    orderNotCompleted:
+      "Oda hii haijakamilika — pesa ya muuzi hutumwa baada ya mnunuzi kupokea.",
+    payoutAlreadySent: "Malipo haya tayari yameshatuma.",
+    payoutNotFound: "Foli ya malipo haipatikani.",
+    dbPaidOnly: "Mfumo hukabidhi pesa tu za oda zilizolipwa kwa Snippe.",
+    bankOutsideApi:
+      "Malipo ya benki hubreshwa nje ya API hii; weka hali mwenyewe.",
+    adminSecretMissing:
+      "Fungo la seva halijawekwa; mabadiliko haya hayawezeki.",
+    dbRejected: "Hifadhidata imekataa.",
+    orderFailed: "Oda haikawezekana.",
+    ussdSent:
+      "Tumekutumia ombi la malipo kwenye simu yako. Kamilisha USSD push.",
+    paymentsNotConfigured:
+      "Malipo ya simu hayijaunganishwa bado. Lipa mikononi kwa muuzi wakati unapochukua oda.",
+    disburseNotConfigured:
+      "Snippe au fungo la seva halijawekwa; malipo hayawezi kutumwa kwa simu.",
+    statusFrozen: "Oda {status} haibadilishwi tena.",
+  },
   channels: {
     mpesa: "Tigo Pesa",
     airtel: "Airtel Money",
@@ -429,6 +521,7 @@ const sw = {
     confirmed: "Imethibitishwa",
     preparing: "Inapikwa",
     ready: "Iko tayari",
+    out_for_delivery: "Njiani — msabishi amechukua",
     completed: "Imekamilika",
     cancelled: "Imebatilishwa",
     unpaid: "Haijalipwa",
@@ -458,6 +551,14 @@ const sw = {
     phone: "Namba ya simu",
     address: "Anwani ya kupigia",
     addressPlaceholder: "Mfano: Block C, Lupeta, namba 12",
+    zoneTitle: "Eneo unalopelekwa",
+    zonePlaceholder: "Chagua eneo ulipo",
+    zoneHint:
+      "Maeneo haya yapo chuoni au karibu na chuo, na hutunzwa na msimamizi. Gharama ya upelekezaji huwekwa na muuzi wa duka hili.",
+    zoneNone:
+      "Msimamizi bado hujaongeza maeneo ya upelekezaji. Chagua kuchukua mwenyewe kwa sasa.",
+    zoneRequired: "Chagua eneo unalopelekwa.",
+    zoneAria: "Eneo la upelekezaji",
     noteLabel: "Maelezo ya ziada (si lazima)",
     notePlaceholder: "Mfano: Usiweke mbili zaizi.",
     extrasTitle: "Vinywaji na viongezo vya muuzi huyu",
@@ -530,6 +631,10 @@ const sw = {
     errSignupDisabled:
       "Usajili umezimwa kwenye mradi huu. Supabase → Authentication → Sign In / Providers → washia 'Allow new users'.",
     errToken: "Namba hiyo si sahihi au imeisha muda wake. Tuma namba mpya kisha uiandike mara moja.",
+    errBadEmail:
+      "Anwani ya barua pepe imekatika. Andika kamili, mfano jina@mfano.com.",
+    errNotConfirmed:
+      "Akaunti hii haijathibitishwa bado. Tuma kiungo kipya kisha kifungue mara moja ndani ya dakika chache.",
     errSmtp:
       "Supabase ilishindwa kutuma barua pepe kupitia mailer yake. Angalia Supabase → Authentication → SMTP Settings: Brevo anahitaji **SMTP key** (si API key) na Username ya Brevo (si hostname), na Sender lazima iwe kwenye domeini uliyothibitisha — README hatua (f).",
     errGoogle:
@@ -562,6 +667,19 @@ const sw = {
     no: "Hapana",
     viewPage: "Ona ukurasa",
     none: "—",
+    problems: {
+      offline:
+        "Muunganisho na seva umekatika. Angalia intaneti yako kisha ujaribu tena.",
+      denied:
+        "Ruhusa imekataliwa — huenda kitu hiki si cha akaunti yako, au umeishaingia.",
+      duplicate:
+        "Tayari kuna kitu kinachotumia hiyo anwani. Jaribu nyingine.",
+      invalid:
+        "Maelezo uliyotuma hayakubaliki. Angalia sehemu zinazohitajika kisha ujaribu tena.",
+      storage:
+        "Picha haikupakiwa kamili. Jaribu tena, au chagua faili ndogo.",
+      unknown: "Samahani, kitu kilivurugika. Jaribu tena.",
+    },
   },
   photo: {
     hint: "Bofya alama ya + uchague faili · JPG, PNG au WebP · hadi 5MB kwa picha.",
@@ -569,6 +687,7 @@ const sw = {
     tooLarge: "{name} ni kubwa kuliko {size}MB.",
     removeAria: "Ondoa picha",
     badType: "{name}: faili lazima liwe JPG, PNG au WebP.",
+    uploading: "Inapakia {done}/{total}…",
   },
   setup: {
     title: "Mfumo bado haujaunganishwa na hifadhidata.",
@@ -586,10 +705,11 @@ const sw = {
     schemaHint:
       "Meza mpya za mfumo bado hazipo kwenye Supabase. Fungua dashboard ya Supabase → SQL Editor → bandika yaliyomo kote katika supabase/schema.sql → Run (faili hii huongeza tu vilivyokosekana, hakuna data inayofutwa), kisha jaribu tena.",
     noMessage: "Hakuna ujumbe wa makosa kutoka kwa seva.",
+    home: "Nenda ukuranani",
   },
   notFound: {
-    title: "Ukurasa haujajengwa bado",
-    desc: "Sehemu hii itaungana na hifadhidata (Supabase). Kwa sasa unaweza kutembelea sokoni au kuagiza chakula.",
+    title: "Ukurasa haujapatikani",
+    desc: "Ukurasa huu haupo — unaweza kuwa umeondolewa, haujajengwa bado, au unahitaji kuunganishwa na hifadhidata (Supabase). Jaribu kutembelea sokoni au kuagiza chakula.",
   },
   news: {
     eyebrow: "Habari & Matukio",
@@ -1001,6 +1121,220 @@ const sw = {
       },
     ],
   },
+  roles: {
+    buyer: "Mnunuzi",
+    seller: "Muuzaji",
+    courier: "Msabishi",
+    admin: "Msimamizi",
+    buyerDesc: "Unatafuta, kulinganisha bei na kuweka oda popote ulipo choni.",
+    sellerDesc: "Una biashara — ona oda, menyu, ofa na matangazo yako.",
+    courierDesc: "Una kazi za upelekezaji ambazo muuzi amekupangia.",
+    adminDesc: "Una udhibiti wa sehemu zote za jukwaa.",
+    yourHub: "Beti lako",
+    hubIntro:
+      "Hapa unaona majibu ya rol ulizonazo pekee. Ukipata rol mpya — biashara, usabishi au usimamizi — vitu vya rol hiyo huonekana hapa menyewe.",
+    profileTile: "Wasifu wangu",
+    courierTile: "Kazi za usabishi",
+    zonesTile: "Maeneo ya upelekezaji",
+    courierRequestsTile: "Maombi ya wajumbe",
+    addBusinessTile: "Fungua biashara",
+    buyerTile: "Oda zangu",
+    noRoleNote:
+      "Kwa sivi una majibu ya mnunuzi tu. Anza kwa kununua, kufungua biashara, au kuomba usabishi.",
+  },
+  zones: {
+    title: "Maeneo ya upelekezaji",
+    desc:
+      "Orodha hii hutunzwa na msimamizi pekee: mahali chuoni na karibu na chuo ambako mnunuzi huchagua kwa dropdown kabla ya kuweka oda.",
+    add: "Ongeza eneo",
+    name: "Jina la eneo",
+    namePlaceholder: "Mfano: Kigogo Gate, Block C, Mianzugu",
+    note: "Maelezo mafupi (si lazima)",
+    notePlaceholder: "Mfano: Mlango wa nyuma, hadi saa kumi usiku",
+    order: "Mpangilio",
+    active: "Linaamilishwa",
+    inactive: "Limezimwa",
+    save: "Hifadhi",
+    cancel: "Wacha",
+    editing: "Unahariri: {name}",
+    created: "Eneo \"{name}\" limeongezwa.",
+    updated: "Eneo \"{name}\" limebadilishwa.",
+    removed: "Eneo \"{name}\" limeondolewa.",
+    empty:
+      "Bado hakuna eneo hata moja. Maeneo huongezwa na msimamizi hapa juu.",
+    deleteConfirm: "Ondoa eneo hili kabisa?",
+    needName: "Andika jina la eneo (angalau herufi 2).",
+    servedCount: "Lilotumikiwa na biashara {count}",
+    mineTitle: "Maeneo unayotumikia",
+    mineDesc:
+      "Chagua maeneo ambayo duka hili linapelekea. Usichague chochote: utatumikia kila eneo hai lililo orodheshwa na msimamizi.",
+    mineSelected: "Umechagua maeneo {count}.",
+    mineNone: "Unatumikia maeneo yote yaliyoamilishwa sasa hivi.",
+    mineSaved: "Maeneo ya biashara yamehifadhiwa.",
+    mineEmpty: "Msimamizi hujaongeza maeneo bado.",
+  },
+  courier: {
+    role: "Usabishi",
+    title: "Kazi za usabishi",
+    desc:
+      "Muuzi ndiye anayekupanga kwenye kila oda. Malipo ya msabishi hukubalianwa na mmiliki wa duka nje ya jukwaa hili — kwa hivyo mfumo huu hauonyeshi wala kuhifadhi kiasi unacholipwa.",
+    request: "Oomba kuwa msabishi",
+    requesting: "Inatuma maombi…",
+    withdraw: "Ondoa maombi yangu",
+    requested: "Maombi yako yameandikwa. Msimamizi atayapitisha au kuyakataa.",
+    approved: "Umeidhinishwa kama msabishi.",
+    pending: "Maombi yangojia uidhinishaji.",
+    rejected: "Maombi yako yamekataliwa kwa sasa. Unaweza kuomba tena.",
+    none:
+      "Unakitaka kubeba mizigo ya wateja, weka maombi hapa chini — msimamizi ndiye anayeidhinisha, si wewe mwenyewe.",
+    workTitle: "Oda zilizokupangiwa",
+    noWork:
+      "Bado hakuna oda iliyokupangiwa. Muuzi ndiye atakayekupanga kwenye kazi.",
+    pickedUp: "Nimechukua oda",
+    delivered: "Nimekamilisha upelekezaji",
+    assignedOn: "Upelekezaji uliopangwa",
+    buyerContact: "Mnunuzi",
+    zoneLabel: "Eneo la upelekezaji",
+    addressLabel: "Anwani",
+    openOrder: "Fungua oda",
+    statusHint:
+      "Tangaza hapa unapochukua na unapofika — muuzi na mnunuzi wataona kweli uko wapi.",
+    requestsTitle: "Maombi ya wajumbe",
+    requestsDesc:
+      "Hakuna anaweza kujiweka msabishi mwenyewe. Unapoidhinisha, mtu huyo huona kazi zake tu kwenye beti lake.",
+    noRequests: "Hakuna maombi mapya yanayosubiri.",
+    approve: "Idhinisha",
+    revoke: "Rudisha uidhinishaji",
+    reject: "Kataa",
+    approvedNow: "{name} ameidhinishwa kama msabishi.",
+    revokedNow: "Uidhinishaji wa {name} umerudishwa.",
+    rejectedNow: "Maombi ya {name} yamekataliwa.",
+    approvedList: "Wajumbe walioidhinishwa",
+    assignTitle: "Mpange msabishi",
+    assignPick: "Chagua msabishi",
+    assignSelfOption: "Hakuna — nitapeleka mwenyewe",
+    assignSaved: "{name} amepangwa kwenye oda hii.",
+    assignCleared: "Mpangilio wa msabishi umeondolewa.",
+    noCouriers:
+      "Bado hakuna msabishi aliyeidhinishwa. Msimamizi anaweza kumridhinisha anayeomba.",
+    assignedTo: "Msabishi: {name}",
+    moneyNote:
+      "Malipo ya msabishi hufanywa kati yake na mmiliki wa duka, nje ya mfumo huu.",
+  },
+  profile: {
+    title: "Wasifu wangu",
+    desc:
+      "Maelezo haya huonekana na wauzaji unawonunulia — simu yako hutumika kuifikirisha oda.",
+    emailLabel: "Barua pepe ya akaunti",
+    name: "Jina kamili",
+    needName: "Andika jina lako kwanza (angalau herufi 2).",
+    phone: "Namba ya simu",
+    hall: "Block / Hall",
+    avatar: "Picha ya wasifu",
+    pick: "Chagua picha",
+    save: "Hifadhi mabadiliko",
+    saving: "Inahifadhi…",
+    saved: "Wasifu wako umehifadhiwa.",
+    rolesTitle: "Majibu yako",
+    member: "Mwanajukwaa tangu {date}",
+    businessesTitle: "Biashara zako",
+    noBusinesses:
+      "Bado huna biashara. Fungua moja ili uze chakula, bidhaa au huduma.",
+    ordersTitle: "Oda zako",
+    ordersCount: "Umeweka oda {count}.",
+    ordersEmpty: "Bado hujaweka oda hata moja.",
+    courierStatus: "Hali ya usabishi",
+    languageTitle: "Lugha ya mfumo",
+    languageDesc:
+      "Lugha hii hutumika kwenye kurasa, ujumbe wa oda na arifa za simu.",
+    signOut: "Toka kwenye akaunti",
+    notSignedIn: "Ulioweka oda hupatikana baada ya kuingia.",
+  },
+  feed: {
+    title: "Mlisho wa msosi",
+    desc:
+      "Chakula chote kinachopikwa choni katika sehemu moja. Kila kadi ni chakula halisi kutoka kwa mgahawa halisi — hakuna picha za kuzaa wala bei za majaribio.",
+    empty:
+      "Bado hakuna mgahawa ulioweka chakula kwenye mlisho. Unapochapisha menyu yako, chakula chako huja hapa.",
+    allSlots: "Vikawo vyote",
+    bySeller: "kutoka {name}",
+    openStore: "Fungua ukurasa wa {name}",
+    searchPlaceholder: "Tafuta chakula, kinywaji au mgahawa",
+    orderNow: "Agiza",
+    count: "Vipande {count} vya chakula",
+    fresh: "Vypya kwenye mlisho",
+    noResults: "Hakuna chakula kinacholingana na utafutaji huo.",
+  },
+  getStarted: {
+    title: "Anza na IAA Marketplace",
+    subtitle:
+      "Elewa jukwaa katika hatua nne kwanza — kisha chagua njia yako ya kuingia.",
+    stepsLabel: "Hatua {current} kati ya {total}",
+    prev: "Rudi nyuma",
+    next: "Endelea",
+    slideDots: "Nenda kwenye hatua {n}",
+    finishTitle: "Ukiona inakuhusu, ingia",
+    signInCta: "Ingia au jiandikishe",
+    exploreCta: "Tazama bila kujiandikisha",
+    noPasswordNote:
+      "IAA Marketplace haina nenosiri. Kila kuingia hutumia msimbo wa namba sita unaotumwa kwenye barua pepe yako, au kiungo cha moja kwa moja. Kwa hivyo hakuna \"Nenosiri lilisahaulika\": fungua ukurasa wa kuingia, hakikisha barua pepe ni ileile, na utume msimbo upya.",
+    whatYouNeed: "Unachohitaji kwanza",
+    needEmail: "Barua pepe yako halisi — ndiyo akaunti yako",
+    needPhone: "Namba simu inayoweza kupokea SMS ya muuzi",
+    needBusiness: "Kwa uuzaji: nyaraka za biashara ili msimamizi akuthibitishe",
+    slides: [
+      {
+        kicker: "Chakula",
+        title: "Agiza msosi na chakula cha migahawa ya choni",
+        body:
+          "Fungua ukurasa wa mgahawa, chagua vifungo vya asubuhi hadi jioni, kisha ulipe kwa MPesa, Airtel Money, Mixx Yas au Halotel — au lipa mikononi unapochukua.",
+        points: [
+          "Chagua \"Nipeleke\" kisha eneo lako kwenye orodha ya maeneo ya chuo",
+          "Au chagua \"Nitachukua mwenyewe\" bila gharama ya delivery",
+          "Weka saa unayotaka chakula kiandaliwe — si lazima kiwe sasa hivi",
+        ],
+      },
+      {
+        kicker: "Sokoni",
+        title: "Nunua na uza bidhaa, huduma na vyumba",
+        body:
+          "Simu, kompyuta, vitabu, nguo, fundi simu, kinyozi, au chumba cha kukodi — kila kimoja kina ukurasa chake chenye bei, picha na mawasiliano halisi ya muuzi.",
+        points: [
+          "Tangazo lako huonekana kwa wote baada ya msimamizi kulithibitisha",
+          "Gharama ya upelekezaji huwekwa na kila muuzi kwa biashara yake",
+          "Nyota na maoni ya wateja huonekana kwenye ukurasa wa muuzi",
+        ],
+      },
+      {
+        kicker: "Uuzaji",
+        title: "Fungua duka lako la kidigitali",
+        body:
+          "Biashara yako hupata ukurasa wa yake: nembo, menyu, ofa za punguzo, foli ya oda na ripoti ya malipo. Hutuma pia maeneo unayotumikia na kumpanga msabishi wa oda zinazopelekwa.",
+        points: [
+          "Weka menyu na picha halisi za chakula au bidhaa zako",
+          "Chagua maeneo ya chuo ambayo duka hili linatumikia",
+          "Panga msabishi aliyeidhinishwa kwenye oda inayopelekwa",
+        ],
+      },
+      {
+        kicker: "Usabishi",
+        title: "Pata kazi ya upelekezaji choni",
+        body:
+          "Omba kuwa msabishi; msimamizi ndiye anayekuidhinisha. Muuzi ndiye atakayekupanga kwenye oda, na wewe huona kazi zako pekee kwenye beti lako.",
+        points: [
+          "Malipo hukubalianwa na mmiliki wa duka, nje ya mfumo huu",
+          "Skrini yako huonyesha eneo, anwani na mawasiliano ya oda",
+          "Utangaza unapochukua na unapofika — pande zote mbili huona",
+        ],
+      },
+    ],
+  },
+  splash: {
+    name: "IAA Marketplace",
+    tagline: "Chakula, bidhaa, huduma na vyumba — mahali pamoja choni",
+    waiting: "Inafungua jukwaa…",
+    skip: "Ruka utangulizi",
+  },
   footer: {
     colMarketplace: "SOKONI",
     colSellers: "WAUZI",
@@ -1039,6 +1373,30 @@ const en: Dict = {
     description:
       "The IAA Arusha market: buy and sell items, find services and order food with mobile money. Every seller is welcome, students are the primary audience.",
     product: "Listing · IAA Marketplace",
+    pages: {
+      market: {
+        title: "Marketplace — items and rooms · IAA Marketplace",
+        desc: "Ads from IAA Arusha sellers: items for sale, rooms to rent and services. Prices and photos come from each seller themselves.",
+      },
+      food: {
+        title: "Msosi Fasta — campus food · IAA Marketplace",
+        desc: "Real menus from food sellers at IAA Arusha. Order with mobile money, eat on campus or have it delivered to you.",
+      },
+      services: {
+        title: "Skills and services for customers · IAA Marketplace",
+        desc: "Phone repair, tailoring, laundry and other services offered by self-registered sellers, each setting their own price.",
+      },
+      rooms: {
+        title: "Rooms and accommodation near IAA · IAA Marketplace",
+        desc: "Rooms, hostel beds and housing listed by the owners themselves, priced per month.",
+      },
+      news: {
+        title: "Campus news and events · IAA Marketplace",
+        desc: "Posts published by the IAA Marketplace admin about campus events and service updates.",
+      },
+      storeFallback:
+        "Menus, items and orders from this IAA Marketplace seller in Arusha.",
+    },
   },
   nav: {
     marketplace: "Marketplace",
@@ -1046,12 +1404,16 @@ const en: Dict = {
     services: "Services",
     rooms: "Rooms",
     news: "News & Events",
+    feed: "Feed",
+    getStarted: "How to start",
     signIn: "Sign in",
     signOut: "Sign out",
     post: "Post an ad",
     account: "Account",
     myAds: "My ads",
     myOrders: "My orders",
+    profile: "Profile",
+    courierWork: "Delivery work",
     admin: "Admin console",
     openMenu: "Open menu",
     closeMenu: "Close menu",
@@ -1412,6 +1774,7 @@ const en: Dict = {
   orders: {
     title: "My orders",
     listDesc: "The seller updates each order status right away.",
+    statusAria: "Change this order status",
     backToList: "Back to my orders",
     integrityNote:
       "Prices, totals and payment status are written by the database — the browser cannot change them.",
@@ -1440,6 +1803,69 @@ const en: Dict = {
       "Mobile money is not switched on yet. Pay the seller in cash when you collect.",
     statusUpdated: "status updated",
   },
+  /**
+   * Ujumbe wa njia za API. Msomaji wa ujumbe huu ni binadamu aliye kwenye
+   * kivinjari — kwa hivyo hutafsiriwa kwa lugha aliyoichagua, si Kiswahili
+   * pekee. Nakala za env-var (mfano "SUPABASE_SERVICE_ROLE_KEY") hazipo hapa
+   * kwa sababu husomwa na mfanyakazi wa mfumo tu.
+   */
+  api: {
+    dbNotConfigured: "The database is not connected.",
+    badRequest: "That request could not be read.",
+    bodyNotJson: "The request body is not JSON.",
+    unknownStage: "That stage is not recognised.",
+    unknownAction: "That action is not recognised.",
+    unknownPaymentStatus: "That payment status is not recognised.",
+    signInFirst: "Sign in first.",
+    signInToOrder: "Sign in before placing an order.",
+    signInToPay: "Sign in before paying.",
+    noPermission: "You do not have permission for this order.",
+    adminOnly: "This action is for admins.",
+    courierOnly: "This action is for an approved courier.",
+    zoneUnavailable: "That area is unavailable or not active.",
+    courierNotApproved: "That courier is not approved.",
+    pickupNoCourier: "This order is picked up, so there is no courier to assign.",
+    buyerCancelOnly: "As a buyer you can only cancel an order.",
+    orderNotFound: "Order not found.",
+    orderNotYours: "This order is not yours.",
+    orderNotFoundForYou: "That order is not available to you.",
+    orderUnrecognised: "That order is not recognised.",
+    badOrderId: "The order ID is not valid.",
+    badId: "The ID is not valid.",
+    totalMismatch: "The order total is not correct.",
+    chooseAtLeastOne: "Choose at least one item.",
+    chooseChannel: "Choose a payment method.",
+    chooseFutureTime: "Choose a time in the future, not one already past.",
+    timeUnreadable: "The time you chose could not be read.",
+    maxTwoWeeks: "Do not go more than two weeks ahead.",
+    needPhone: "Enter a phone number that can be called.",
+    needAddress: "Enter an address the seller can reach you at.",
+    needSellerPhone: "Enter the seller's correct number.",
+    sellerPhoneOnPayout:
+      "Add the seller's number to this payout before sending it.",
+    noPhoneOnOrder: "This order has no valid phone number.",
+    businessClosed: "This business is closed.",
+    orderCancelled: "This order has been cancelled.",
+    orderAlreadyPaid: "This order has already been paid.",
+    orderNotCompleted:
+      "This order is not completed — the seller is paid after the buyer collects.",
+    payoutAlreadySent: "This payout has already been sent.",
+    payoutNotFound: "The payout record was not found.",
+    dbPaidOnly: "Only money from orders paid through Snippe is released.",
+    bankOutsideApi:
+      "Bank payouts are settled outside this API; update the status yourself.",
+    adminSecretMissing:
+      "The server key is not set; this change is not possible.",
+    dbRejected: "The database rejected the change.",
+    orderFailed: "The order could not be placed.",
+    ussdSent:
+      "We sent a payment request to your phone. Complete the USSD push.",
+    paymentsNotConfigured:
+      "Mobile money is not connected yet. Pay the seller in cash when you collect the order.",
+    disburseNotConfigured:
+      "Snippe or the server key is not set; money cannot be sent by phone.",
+    statusFrozen: "An order that is {status} cannot be changed further.",
+  },
   channels: {
     mpesa: "Tigo Pesa",
     airtel: "Airtel Money",
@@ -1457,6 +1883,7 @@ const en: Dict = {
     confirmed: "Confirmed",
     preparing: "Preparing",
     ready: "Ready",
+    out_for_delivery: "Out for delivery — the courier has it",
     completed: "Completed",
     cancelled: "Cancelled",
     unpaid: "Unpaid",
@@ -1486,6 +1913,14 @@ const en: Dict = {
     phone: "Phone number",
     address: "Address for delivery",
     addressPlaceholder: "e.g. Block C, Lupeta, number 12",
+    zoneTitle: "Where we deliver it",
+    zonePlaceholder: "Choose where you are",
+    zoneHint:
+      "These areas are on or near campus and are kept by the admin. The delivery fee itself is set by the owner of this shop.",
+    zoneNone:
+      "The admin has not added delivery areas yet. Choose pickup for now.",
+    zoneRequired: "Pick the area it will be delivered to.",
+    zoneAria: "Delivery area",
     noteLabel: "Extra note (optional)",
     notePlaceholder: "e.g. No extra chilli.",
     extrasTitle: "Drinks and extras from this seller",
@@ -1558,6 +1993,9 @@ const en: Dict = {
     errSignupDisabled:
       "Sign-ups are switched off for this project. Supabase → Authentication → turn off 'Disable sign-ups'.",
     errToken: "That code is wrong or has expired. Request a new code and enter it right away.",
+    errBadEmail: "That email address is incomplete. Write the full address, e.g. name@example.com.",
+    errNotConfirmed:
+      "This account is not confirmed yet. Send a fresh link and open it right away, within a few minutes.",
     errSmtp:
       "Supabase could not send the email through its mailer. Check Supabase → Authentication → SMTP Settings: Brevo needs the **SMTP key** (not the API key) and the Brevo Login (not the hostname), and the Sender must sit on a domain you verified — README step (f).",
     errGoogle:
@@ -1590,6 +2028,17 @@ const en: Dict = {
     no: "No",
     viewPage: "Open page",
     none: "—",
+    problems: {
+      offline:
+        "The connection to the server dropped. Check your internet and try again.",
+      denied:
+        "Permission denied — this record may not belong to your account, or your session expired.",
+      duplicate: "Something already uses that value. Try another one.",
+      invalid:
+        "The details you sent were not accepted. Check the required fields and try again.",
+      storage: "The photo did not finish uploading. Try again, or pick a smaller file.",
+      unknown: "Sorry, something went wrong. Please try again.",
+    },
   },
   photo: {
     hint: "Click the + sign to pick a file · JPG, PNG or WebP · up to 5MB each.",
@@ -1597,6 +2046,7 @@ const en: Dict = {
     tooLarge: "{name} is larger than {size}MB.",
     removeAria: "Remove photo",
     badType: "{name}: the file must be a JPG, PNG or WebP.",
+    uploading: "Uploading {done}/{total}…",
   },
   setup: {
     title: "The system is not connected to a database yet.",
@@ -1614,10 +2064,11 @@ const en: Dict = {
     schemaHint:
       "The marketplace's newer tables are not in Supabase yet. Open the Supabase dashboard → SQL Editor → paste the full contents of supabase/schema.sql → Run (that file only adds what is missing, it deletes no data), then try again.",
     noMessage: "The server returned no error message.",
+    home: "Go to the home page",
   },
   notFound: {
-    title: "This page is not built yet",
-    desc: "This section still needs the database (Supabase) connection. Meanwhile you can browse the market or order food.",
+    title: "Page not found",
+    desc: "This page is missing — it may have been removed, not built yet, or it still needs the database (Supabase) connection. Try browsing the market or ordering food.",
   },
   news: {
     eyebrow: "News & Events",
@@ -2028,6 +2479,216 @@ const en: Dict = {
         body: "IAA Marketplace connects buyers with sellers. We do not guarantee the quality of goods or settle disputes between the parties; any grievance can be reported to an admin for review.",
       },
     ],
+  },
+  roles: {
+    buyer: "Buyer",
+    seller: "Seller",
+    courier: "Courier",
+    admin: "Admin",
+    buyerDesc: "You search, compare prices and place orders wherever you are on campus.",
+    sellerDesc: "You own a business — see its orders, menu, offers and ads.",
+    courierDesc: "You have delivery jobs that a seller assigned to you.",
+    adminDesc: "You control every part of the marketplace.",
+    yourHub: "Your hub",
+    hubIntro:
+      "This is where you see only the duties of the roles you hold. When you gain a role — a business, courier work or admin — its tools appear here automatically.",
+    profileTile: "My profile",
+    courierTile: "Delivery work",
+    zonesTile: "Delivery areas",
+    courierRequestsTile: "Courier requests",
+    addBusinessTile: "Open a business",
+    buyerTile: "My orders",
+    noRoleNote:
+      "Right now you hold buyer duties only. Start by buying, opening a business, or requesting courier work.",
+  },
+  zones: {
+    title: "Delivery areas",
+    desc:
+      "Only the admin keeps this list: places on and near campus that a buyer picks from a dropdown before ordering.",
+    add: "Add an area",
+    name: "Area name",
+    namePlaceholder: "e.g. Kigogo Gate, Block C, Mianzugu",
+    note: "Short note (optional)",
+    notePlaceholder: "e.g. Back gate, open until 10pm",
+    order: "Order",
+    active: "Active",
+    inactive: "Turned off",
+    save: "Save",
+    cancel: "Cancel",
+    editing: "Editing: {name}",
+    created: "Area \"{name}\" added.",
+    updated: "Area \"{name}\" updated.",
+    removed: "Area \"{name}\" removed.",
+    empty: "No area exists yet. The admin adds areas here.",
+    deleteConfirm: "Remove this area for good?",
+    needName: "Write the area name (at least 2 characters).",
+    servedCount: "Served by {count} businesses",
+    mineTitle: "Areas you deliver to",
+    mineDesc:
+      "Choose the areas this shop delivers to. Select nothing and you serve every active area on the admin list.",
+    mineSelected: "You selected {count} areas.",
+    mineNone: "You serve every area the admin has activated.",
+    mineSaved: "Shop areas saved.",
+    mineEmpty: "The admin has not added any areas yet.",
+  },
+  courier: {
+    role: "Delivery work",
+    title: "Delivery work",
+    desc:
+      "The seller assigns you to each order. Courier pay is agreed with the shop owner outside this platform, so this system neither shows nor stores what you are paid.",
+    request: "Request courier work",
+    requesting: "Sending request…",
+    withdraw: "Withdraw my request",
+    requested: "Your request is recorded. The admin will approve or decline it.",
+    approved: "You are approved as a courier.",
+    pending: "Your request awaits approval.",
+    rejected: "Your request was declined for now. You can ask again.",
+    none:
+      "If you want to carry deliveries, send a request here — the admin approves it, you cannot approve yourself.",
+    workTitle: "Orders assigned to you",
+    noWork: "No order is assigned to you yet. Sellers do the assigning.",
+    pickedUp: "I have picked it up",
+    delivered: "Delivery complete",
+    assignedOn: "Assigned",
+    buyerContact: "Buyer",
+    zoneLabel: "Delivery area",
+    addressLabel: "Address",
+    openOrder: "Open order",
+    statusHint:
+      "Announce here when you collect and when you arrive — the seller and buyer then see where the order really is.",
+    requestsTitle: "Courier requests",
+    requestsDesc:
+      "Nobody can make themselves a courier. When you approve someone, they see only their own work in their hub.",
+    noRequests: "No requests waiting.",
+    approve: "Approve",
+    revoke: "Revoke approval",
+    reject: "Decline",
+    approvedNow: "{name} is approved as a courier.",
+    revokedNow: "{name} is no longer an approved courier.",
+    rejectedNow: "{name}'s request was declined.",
+    approvedList: "Approved couriers",
+    assignTitle: "Assign a courier",
+    assignPick: "Choose a courier",
+    assignSelfOption: "None — I will deliver it myself",
+    assignSaved: "{name} is assigned to this order.",
+    assignCleared: "The courier assignment was removed.",
+    noCouriers:
+      "No courier is approved yet. The admin can approve someone who requests it.",
+    assignedTo: "Courier: {name}",
+    moneyNote:
+      "Courier payment happens between the rider and the shop owner, outside this system.",
+  },
+  profile: {
+    title: "My profile",
+    desc:
+      "Sellers you buy from see these details — your phone is how they reach your order.",
+    emailLabel: "Account email",
+    name: "Full name",
+    needName: "Write your name first (at least 2 characters).",
+    phone: "Phone number",
+    hall: "Block / Hall",
+    avatar: "Profile picture",
+    pick: "Choose a picture",
+    save: "Save changes",
+    saving: "Saving…",
+    saved: "Your profile was saved.",
+    rolesTitle: "Your roles",
+    member: "On the platform since {date}",
+    businessesTitle: "Your businesses",
+    noBusinesses: "You have no business yet. Open one to sell food, goods or services.",
+    ordersTitle: "Your orders",
+    ordersCount: "You have placed {count} orders.",
+    ordersEmpty: "You have not placed an order yet.",
+    courierStatus: "Courier status",
+    languageTitle: "Interface language",
+    languageDesc:
+      "This language is used on pages, order messages and phone alerts.",
+    signOut: "Sign out of this account",
+    notSignedIn: "Your orders appear after you sign in.",
+  },
+  feed: {
+    title: "The msosi feed",
+    desc:
+      "Every dish cooked on campus in one place. Each card is real food from a real kitchen — no invented photos and no trial prices.",
+    empty: "No kitchen has published food to the feed yet. When a seller posts a menu, their dishes appear here.",
+    allSlots: "All times of day",
+    bySeller: "from {name}",
+    openStore: "Open {name}'s page",
+    searchPlaceholder: "Search a dish, a drink or a kitchen",
+    orderNow: "Order",
+    count: "{count} dishes",
+    fresh: "New on the feed",
+    noResults: "No dish matches that search.",
+  },
+  getStarted: {
+    title: "Start with IAA Marketplace",
+    subtitle:
+      "Understand the platform in four steps first — then choose how you sign in.",
+    stepsLabel: "Step {current} of {total}",
+    prev: "Back",
+    next: "Continue",
+    slideDots: "Go to step {n}",
+    finishTitle: "If this is for you, sign in",
+    signInCta: "Sign in or register",
+    exploreCta: "Look around first",
+    noPasswordNote:
+      "IAA Marketplace has no password. Every sign-in uses the six-digit code sent to your email, or a direct link. So there is no \"forgot password\": open the sign-in page, make sure the email is the same one, and ask for a new code.",
+    whatYouNeed: "What you need first",
+    needEmail: "Your real email — it is your account",
+    needPhone: "A phone number that can receive the seller's SMS",
+    needBusiness: "For selling: business documents so an admin can verify you",
+    slides: [
+      {
+        kicker: "Food",
+        title: "Order msosi and campus kitchen dishes",
+        body:
+          "Open a kitchen page, choose from breakfast to supper, then pay with MPesa, Airtel Money, Mixx Yas or Halotel — or pay in cash when you collect.",
+        points: [
+          "Pick \"Deliver it\" and then your area from the campus area list",
+          "Or choose \"I will pick it up\" with no delivery charge",
+          "Set the time you want it cooked — it does not have to be now",
+        ],
+      },
+      {
+        kicker: "Market",
+        title: "Buy and sell goods, services and rooms",
+        body:
+          "Phones, laptops, books, clothing, a phone technician, a barber or a room to rent — each one has its own page with a real price, photo and seller contact.",
+        points: [
+          "Your ad appears to everyone after an admin approves it",
+          "Each seller sets the delivery fee for their own business",
+          "Stars and buyer reviews show on the seller page",
+        ],
+      },
+      {
+        kicker: "Selling",
+        title: "Open your own digital shop",
+        body:
+          "Your business gets its own page: logo, menu, discount offers, an order inbox and a payout report. You also choose the areas you deliver to and assign an approved courier.",
+        points: [
+          "Publish a menu with real photos of your food or goods",
+          "Choose which campus areas this shop delivers to",
+          "Assign an approved courier to an order that is going out",
+        ],
+      },
+      {
+        kicker: "Delivery",
+        title: "Take delivery work on campus",
+        body:
+          "Request courier work; the admin approves you. The seller is the one who assigns you to orders, and your hub shows only your own jobs.",
+        points: [
+          "Pay is agreed with the shop owner, outside this system",
+          "Your screen shows the area, address and order contacts",
+          "You announce pickup and arrival — both sides then see it",
+        ],
+      },
+    ],
+  },
+  splash: {
+    name: "IAA Marketplace",
+    tagline: "Food, goods, services and rooms — together on campus",
+    waiting: "Opening the marketplace…",
+    skip: "Skip the intro",
   },
   footer: {
     colMarketplace: "MARKETPLACE",

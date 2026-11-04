@@ -1,13 +1,13 @@
 "use client";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Loader2, Minus, Percent, Plus, Sparkles } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { fill } from "@/lib/i18n";
 import { formatTzs } from "@/lib/data";
 import { mediaUrl } from "@/lib/media";
-import type { MenuItem, Offer } from "@/lib/types";
+import type { DeliveryZone, MenuItem, Offer } from "@/lib/types";
 
 const MAX_LEAD_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -39,6 +39,7 @@ export default function CheckoutForm({
   offers,
   businessId,
   deliveryFee,
+  zones,
   contact,
 }: {
   lines: CheckoutLine[];
@@ -46,6 +47,8 @@ export default function CheckoutForm({
   offers: Offer[];
   businessId: string;
   deliveryFee: number;
+  /** Maeneo ya chuo ambayo msimamizi ameweka; `null` = safu haijaanzishwa. */
+  zones: DeliveryZone[] | null;
   contact: { email: string; phone: string };
 }) {
   const { t } = useLanguage();
@@ -57,6 +60,7 @@ export default function CheckoutForm({
   );
   const [phone, setPhone] = useState(contact.phone);
   const [address, setAddress] = useState("");
+  const [zoneId, setZoneId] = useState("");
   const [meetup, setMeetup] = useState("");
   const [note, setNote] = useState("");
   const [when, setWhen] = useState<"asap" | "scheduled">("asap");
@@ -66,6 +70,12 @@ export default function CheckoutForm({
   const [offerId, setOfferId] = useState<string>(offers[0]?.id ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Kwa kivinjari cha sauti kosa husomeka tu mtu anaporudi nyuma,
+  // hivyo humpokea focus mara ombi linaposhindwa.
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (error) errorRef.current?.focus();
+  }, [error]);
 
   // Kipande kilichoongezwa hapa kinajiunga na oda hiyo hiyo, kwa hivyo
   // bei yake hukamatwa tena na hifadhidata wakati wa kuhifadhi.
@@ -85,6 +95,7 @@ export default function CheckoutForm({
   );
 
   const allLines = [...lines, ...extraLines];
+  const areaList = zones ?? [];
   const itemsTotal = allLines.reduce((sum, line) => sum + line.price * line.quantity, 0);
   const fee = deliveryMethod === "delivery" ? deliveryFee : 0;
 
@@ -135,6 +146,13 @@ export default function CheckoutForm({
       return;
     }
 
+    // Msimamizi akiwa ameweka maeneo, oda ya upelekezaji lazima ichague limoja.
+    if (deliveryMethod === "delivery" && areaList.length > 0 && !zoneId) {
+      setError(t.checkout.zoneRequired);
+      setBusy(false);
+      return;
+    }
+
     try {
       const response = await fetch("/api/orders", {
         method: "POST",
@@ -147,6 +165,7 @@ export default function CheckoutForm({
             quantity: line.quantity,
           })),
           deliveryMethod,
+          deliveryZoneId: deliveryMethod === "delivery" ? zoneId : "",
           contactPhone: phone,
           deliveryAddress: address,
           meetupPoint: meetup,
@@ -326,7 +345,7 @@ export default function CheckoutForm({
                         −{formatTzs(value)}
                       </span>
                     ) : (
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-600">
                         {blocked ? t.checkout.offerNotYet : t.checkout.offerNone}
                       </span>
                     )}
@@ -409,13 +428,17 @@ export default function CheckoutForm({
           {when === "scheduled" ? (
             <>
               <input
+                id="checkout-scheduled-at"
                 type="datetime-local"
                 value={scheduledAt}
                 onChange={(e) => pickTime(e.target.value)}
+                aria-describedby="checkout-when-hint"
+                aria-invalid={whenError ? true : undefined}
                 required
                 className="field"
               />
               <p
+                id="checkout-when-hint"
                 className={`text-xs leading-relaxed ${
                   whenError ? "text-accent-600" : "text-gray-500"
                 }`}
@@ -423,7 +446,7 @@ export default function CheckoutForm({
                 {scheduledAt === "" || whenError
                   ? (whenError ?? t.checkout.whenHint)
                   : fill(t.checkout.whenSelected, {
-                      when: new Date(scheduledMs as number).toLocaleString("sw-TZ"),
+                      when: new Date(scheduledMs as number).toLocaleString(t.localeDate),
                     })}
               </p>
             </>
@@ -464,6 +487,8 @@ export default function CheckoutForm({
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           required
+          type="tel"
+          autoComplete="tel"
           inputMode="tel"
           placeholder="2557..."
           className="field"
@@ -471,16 +496,53 @@ export default function CheckoutForm({
       </label>
 
       {deliveryMethod === "delivery" && (
-        <label className="block">
-          <span className="mb-2 block text-sm font-bold text-ink-900">{t.checkout.address}</span>
-          <input
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            required
-            placeholder={t.checkout.addressPlaceholder}
-            className="field"
-          />
-        </label>
+        <>
+          {areaList.length > 0 ? (
+            <label className="block">
+              <span className="mb-2 block text-sm font-bold text-ink-900">
+                {t.checkout.zoneTitle}
+              </span>
+              <select
+                value={zoneId}
+                onChange={(e) => setZoneId(e.target.value)}
+                aria-label={t.checkout.zoneAria}
+                aria-describedby="checkout-zone-hint"
+                aria-invalid={error === t.checkout.zoneRequired ? true : undefined}
+                required
+                className="field"
+              >
+                <option value="">{t.checkout.zonePlaceholder}</option>
+                {areaList.map((area) => (
+                  <option key={area.id} value={area.id}>
+                    {area.note ? `${area.name} — ${area.note}` : area.name}
+                  </option>
+                ))}
+              </select>
+              <span
+                id="checkout-zone-hint"
+                className="mt-1.5 block text-xs leading-relaxed text-gray-500"
+              >
+                {t.checkout.zoneHint}
+              </span>
+            </label>
+          ) : zones ? (
+            <p className="rounded-xl bg-paper-100 px-4 py-3 text-sm text-gray-600">
+              {t.checkout.zoneNone}
+            </p>
+          ) : null}
+
+          <label className="block">
+            <span className="mb-2 block text-sm font-bold text-ink-900">{t.checkout.address}</span>
+            <input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              required
+              autoComplete="street-address"
+              placeholder={t.checkout.addressPlaceholder}
+              className="field"
+            />
+          </label>
+        </>
       )}
 
       <label className="block">
@@ -512,7 +574,12 @@ export default function CheckoutForm({
       </label>
 
       {error && (
-        <p className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600">{error}</p>
+        <p
+          role="alert"
+          ref={errorRef}
+          tabIndex={-1}
+          className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600"
+        >{error}</p>
       )}
 
       <button
@@ -524,7 +591,7 @@ export default function CheckoutForm({
         {busy ? t.checkout.placing : t.checkout.placeOrder}
       </button>
 
-      <p className="text-xs leading-relaxed text-gray-400">{t.checkout.firstOrderNote}</p>
+      <p className="text-xs leading-relaxed text-gray-600">{t.checkout.firstOrderNote}</p>
     </form>
   );
 }

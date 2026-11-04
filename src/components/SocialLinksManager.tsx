@@ -1,5 +1,6 @@
 "use client";
 import { useState, type CSSProperties } from "react";
+import { userError } from "@/lib/user-error";
 import { useRouter } from "next/navigation";
 import { LoaderCircle, Plus, Trash2 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
@@ -36,7 +37,7 @@ export default function SocialLinksManager({ links }: { links: SocialLink[] }) {
   );
   const [isActive, setIsActive] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ text: string; bad: boolean } | null>(null);
 
   function pickPlatform(next: SocialPlatform) {
     setPlatform(next);
@@ -51,7 +52,7 @@ export default function SocialLinksManager({ links }: { links: SocialLink[] }) {
   async function save() {
     const trimmed = url.trim();
     if (!/^https?:\/\/.{3,}/i.test(trimmed)) {
-      setNotice(t.social.needUrl);
+      setNotice({ text: t.social.needUrl, bad: true });
       return;
     }
 
@@ -69,9 +70,9 @@ export default function SocialLinksManager({ links }: { links: SocialLink[] }) {
         { onConflict: "platform" },
       );
 
-      if (error) setNotice(error.message);
+      if (error) setNotice({ text: userError(t, error), bad: true });
       else {
-        setNotice(t.social.saved);
+        setNotice({ text: t.social.saved, bad: false });
         router.refresh();
       }
     } finally {
@@ -87,7 +88,7 @@ export default function SocialLinksManager({ links }: { links: SocialLink[] }) {
       .delete()
       .eq("id", link.id);
 
-    if (error) setNotice(error.message);
+    if (error) setNotice({ text: userError(t, error), bad: true });
     else router.refresh();
     setBusy(false);
   }
@@ -99,7 +100,7 @@ export default function SocialLinksManager({ links }: { links: SocialLink[] }) {
       .update({ is_active: !link.is_active })
       .eq("id", link.id);
 
-    if (error) setNotice(error.message);
+    if (error) setNotice({ text: userError(t, error), bad: true });
     else router.refresh();
     setBusy(false);
   }
@@ -126,7 +127,7 @@ export default function SocialLinksManager({ links }: { links: SocialLink[] }) {
                 className={`relative flex h-11 w-11 items-center justify-center rounded-2xl border transition ${
                   isSelected
                     ? "border-transparent bg-(--brand) text-white shadow-md shadow-black/10"
-                    : "border-black/10 bg-paper-50 text-gray-400 hover:text-(--brand)"
+                    : "border-black/10 bg-paper-50 text-gray-600 hover:text-(--brand)"
                 }`}
               >
                 <BrandIcon platform={option} size={20} />
@@ -138,7 +139,7 @@ export default function SocialLinksManager({ links }: { links: SocialLink[] }) {
           })}
         </div>
 
-        <p className="text-xs font-bold uppercase tracking-[0.12em] text-gray-400">
+        <p className="text-xs font-bold uppercase tracking-[0.12em] text-gray-600">
           {platformLabel(platform)}
         </p>
 
@@ -158,7 +159,7 @@ export default function SocialLinksManager({ links }: { links: SocialLink[] }) {
           <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
             <label className="block">
               <span className="text-sm font-bold text-ink-900">
-                {t.social.label} <span className="font-medium text-gray-400">{t.common.optional}</span>
+                {t.social.label} <span className="font-medium text-gray-600">{t.common.optional}</span>
               </span>
               <input
                 value={label}
@@ -192,8 +193,13 @@ export default function SocialLinksManager({ links }: { links: SocialLink[] }) {
         </div>
 
         {notice && (
-          <p className="rounded-2xl bg-primary-50 px-4 py-3 text-sm font-semibold text-primary-800">
-            {notice}
+          <p
+            role={notice.bad ? "alert" : "status"}
+            className={`rounded-2xl px-4 py-3 text-sm font-semibold ${
+              notice.bad ? "bg-accent-100 text-accent-600" : "bg-primary-50 text-primary-800"
+            }`}
+          >
+            {notice.text}
           </p>
         )}
 

@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireAdminActor } from "@/lib/admin-actor";
+import { getT } from "@/lib/i18n-server";
 import { createAdminClient, isAdminClientConfigured } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/media";
 import { queuePayoutForPaidOrder } from "@/lib/payouts";
 import { notifyOrderStage, type NotifyStage } from "@/lib/notify";
+import { userError } from "@/lib/user-error";
 import type { SnippeChannel } from "@/lib/snippe";
 import type { Order, OrderStatus, PaymentStatus } from "@/lib/types";
 
@@ -15,6 +17,7 @@ const STATUSES: OrderStatus[] = [
   "confirmed",
   "preparing",
   "ready",
+  "out_for_delivery",
   "completed",
   "cancelled",
 ];
@@ -36,18 +39,22 @@ const CHANNELS: SnippeChannel[] = ["mpesa", "airtel", "mixx", "halotel"];
  * seva (service_role) pekee kubadilisha safu za pesa.
  */
 export async function PATCH(request: NextRequest) {
+  // Msomaji wa ujumbe huu ni binadamu, kwa hivyo lugha yake (cookie ya
+  // iaa_lang) huamua kamusi inayotumika.
+  const t = await getT();
+
   if (!isSupabaseConfigured) {
-    return NextResponse.json({ message: "Hifadhidata haijaunganishwa." }, { status: 503 });
+    return NextResponse.json({ message: t.api.dbNotConfigured }, { status: 503 });
   }
 
-  const actor = await requireAdminActor();
+  const actor = await requireAdminActor(t);
   if ("error" in actor) return actor.error;
 
   let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ message: "Ombi halinasoma." }, { status: 400 });
+    return NextResponse.json({ message: t.api.badRequest }, { status: 400 });
   }
 
   const orderId = String(body.orderId ?? "");
@@ -55,12 +62,12 @@ export async function PATCH(request: NextRequest) {
   const note = String(body.note ?? "").trim().slice(0, 200);
 
   if (!UUID.test(orderId)) {
-    return NextResponse.json({ message: "Kitambulisho cha oda si sahihi." }, { status: 400 });
+    return NextResponse.json({ message: t.api.badOrderId }, { status: 400 });
   }
 
   if (!isAdminClientConfigured) {
     return NextResponse.json(
-      { message: "Fungo la seva halijawekwa; mabadiliko haya hayawezeki." },
+      { message: t.api.adminSecretMissing },
       { status: 503 },
     );
   }
@@ -74,7 +81,7 @@ export async function PATCH(request: NextRequest) {
 
   const order = row as unknown as Order | null;
   if (!order) {
-    return NextResponse.json({ message: "Oda haipatikani." }, { status: 404 });
+    return NextResponse.json({ message: t.api.orderNotFound }, { status: 404 });
   }
 
   const update: Record<string, unknown> = {};
@@ -83,7 +90,7 @@ export async function PATCH(request: NextRequest) {
   if (action === "status") {
     const status = String(body.status ?? "") as OrderStatus;
     if (!STATUSES.includes(status)) {
-      return NextResponse.json({ message: "Hatua hiyo haijulikani." }, { status: 400 });
+      return NextResponse.json({ message: t.api.unknownStage }, { status: 400 });
     }
     update.status = status;
     events.push({
@@ -93,7 +100,7 @@ export async function PATCH(request: NextRequest) {
   } else if (action === "payment") {
     const payment = String(body.paymentStatus ?? "") as PaymentStatus;
     if (!PAYMENTS.includes(payment)) {
-      return NextResponse.json({ message: "Hali ya malipo haijulikani." }, { status: 400 });
+      return NextResponse.json({ message: t.api.unknownPaymentStatus }, { status: 400 });
     }
     update.payment_status = payment;
 
@@ -114,12 +121,12 @@ export async function PATCH(request: NextRequest) {
         `malipo: ${order.payment_status} → ${payment} (imethibitishwa na msimamizi)`,
     });
   } else {
-    return NextResponse.json({ message: "Kitendo hakijutikana." }, { status: 400 });
+    return NextResponse.json({ message: t.api.unknownAction }, { status: 400 });
   }
 
   const { error: updateError } = await admin.from("orders").update(update).eq("id", orderId);
   if (updateError) {
-    return NextResponse.json({ message: updateError.message }, { status: 400 });
+    return NextResponse.json({ message: userError(t, updateError) }, { status: 400 });
   }
 
   if (events.length > 0) {

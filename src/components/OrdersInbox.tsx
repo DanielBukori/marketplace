@@ -4,23 +4,30 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { formatTzs } from "@/lib/data";
-import type { Order, OrderStatus } from "@/lib/types";
+import CourierAssign from "@/components/CourierAssign";
+import type { Order, OrderStatus, Profile } from "@/lib/types";
 
 const flow: OrderStatus[] = [
   "pending",
   "confirmed",
   "preparing",
   "ready",
+  "out_for_delivery",
   "completed",
   "cancelled",
 ];
 
+/** Oda zilizofika mwisho hazipangiwi msabishi upya. */
+const CLOSED: OrderStatus[] = ["completed", "cancelled"];
+
 export default function OrdersInbox({
   orders,
   canManage,
+  couriers = [],
 }: {
   orders: Order[];
   canManage: boolean;
+  couriers?: Profile[];
 }) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -62,7 +69,7 @@ export default function OrdersInbox({
   return (
     <div className="space-y-4">
       {error && (
-        <p className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600">
+        <p role="alert" className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600">
           {error}
         </p>
       )}
@@ -79,7 +86,7 @@ export default function OrdersInbox({
               </p>
               <p className="mt-0.5 font-mono text-xs text-gray-500">
                 {order.reference} ·{" "}
-                {new Date(order.created_at).toLocaleString("sw-TZ")}
+                {new Date(order.created_at).toLocaleString(t.localeDate)}
               </p>
               {!canManage && (
                 <Link
@@ -128,11 +135,16 @@ export default function OrdersInbox({
                 : t.orders.pickup}
               {order.contact_phone && ` · ${order.contact_phone}`}
             </p>
+            {order.delivery_zone_name && (
+              <p className="text-gray-500">
+                {t.courier.zoneLabel}: {order.delivery_zone_name}
+              </p>
+            )}
             {order.kind === "food" && (
               <p className="text-gray-500">
                 {t.orders.whenLabel}:{" "}
                 {order.scheduled_at
-                  ? new Date(order.scheduled_at).toLocaleString("sw-TZ")
+                  ? new Date(order.scheduled_at).toLocaleString(t.localeDate)
                   : t.orders.whenAsap}
               </p>
             )}
@@ -142,6 +154,7 @@ export default function OrdersInbox({
                 value={order.status}
                 disabled={busyId === order.id}
                 onChange={(e) => setStatus(order.id, e.target.value as OrderStatus)}
+                aria-label={t.orders.statusAria}
                 className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-ink-900 focus:border-primary-500 focus:outline-none"
               >
                 {flow.map((status) => (
@@ -163,6 +176,18 @@ export default function OrdersInbox({
               <span className="font-bold text-primary-800">{t.status[order.status]}</span>
             )}
           </div>
+
+          {canManage &&
+            order.delivery_method === "delivery" &&
+            !CLOSED.includes(order.status) && (
+              <div className="border-t border-black/5 pt-4">
+                <CourierAssign
+                  orderId={order.id}
+                  couriers={couriers}
+                  currentId={order.courier_id ?? null}
+                />
+              </div>
+            )}
         </article>
       ))}
     </div>

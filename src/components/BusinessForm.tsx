@@ -1,5 +1,6 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { userError } from "@/lib/user-error";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import PhotoUploader from "@/components/PhotoUploader";
@@ -37,6 +38,12 @@ export default function BusinessForm({
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Kwa kivinjari cha sauti kosa husomeka tu mtu anaporudi nyuma,
+  // hivyo humpokea focus mara ombi linaposhindwa.
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (error) errorRef.current?.focus();
+  }, [error]);
 
   const effectiveSlug = slug.trim() || slugify(name);
 
@@ -76,7 +83,9 @@ export default function BusinessForm({
 
     if (result.error) {
       setError(
-        result.error.code === "23505" ? t.business.slugTaken : result.error.message,
+        result.error.code === "23505"
+          ? t.business.slugTaken
+          : userError(t, result.error),
       );
       return;
     }
@@ -106,11 +115,12 @@ export default function BusinessForm({
 
         <Field label={t.business.slug}>
           <div className="flex items-center rounded-2xl border border-gray-200 bg-white focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-100">
-            <span className="pl-4 text-sm text-gray-400">/duka/</span>
+            <span className="pl-4 text-sm text-gray-600">/duka/</span>
             <input
               value={slug}
               onChange={(e) => setSlug(slugify(e.target.value))}
               required
+              autoComplete="off"
               className="w-full bg-transparent px-1 py-3 text-sm focus:outline-none"
             />
           </div>
@@ -158,6 +168,9 @@ export default function BusinessForm({
           <input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
+            type="tel"
+            autoComplete="tel"
+            inputMode="tel"
             placeholder="2557..."
             className="field"
           />
@@ -166,6 +179,9 @@ export default function BusinessForm({
           <input
             value={whatsapp}
             onChange={(e) => setWhatsapp(e.target.value)}
+            type="tel"
+            autoComplete="tel"
+            inputMode="tel"
             placeholder="2557..."
             className="field"
           />
@@ -210,7 +226,12 @@ export default function BusinessForm({
       </div>
 
       {error && (
-        <p className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600">
+        <p
+          role="alert"
+          ref={errorRef}
+          tabIndex={-1}
+          className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600"
+        >
           {error}
         </p>
       )}

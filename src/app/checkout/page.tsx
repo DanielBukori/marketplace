@@ -1,12 +1,21 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/require-user";
-import { getBusinessBySlug, getListing } from "@/lib/db";
+import { getBusinessBySlug, getListing, getZonesForBusiness } from "@/lib/db";
 import CheckoutForm, { type CheckoutLine } from "@/components/CheckoutForm";
 import { isSupabaseConfigured } from "@/lib/media";
 import { getT } from "@/lib/i18n-server";
 import SetupNotice from "@/components/SetupNotice";
 import { notFound } from "next/navigation";
+import { noIndexMeta } from "@/lib/seo";
 import type { MenuItem, Offer } from "@/lib/types";
+
+export async function generateMetadata() {
+  const t = await getT();
+  return {
+    ...noIndexMeta,
+    title: `${t.checkout.title} · ${t.brand.name} ${t.brand.suffix}`,
+  };
+}
 
 export default async function CheckoutPage({
   searchParams,
@@ -87,6 +96,8 @@ export default async function CheckoutPage({
     );
   }
 
+  const zones = await getZonesForBusiness(businessId);
+
   return (
     <div className="mx-auto max-w-2xl space-y-8 px-4 py-12 sm:px-6 lg:px-8">
       <div>
@@ -104,6 +115,7 @@ export default async function CheckoutPage({
         offers={offers}
         businessId={businessId}
         deliveryFee={deliveryFee}
+        zones={zones}
         contact={{ email: user.email ?? "", phone: "" }}
       />
     </div>

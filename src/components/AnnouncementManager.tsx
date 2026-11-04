@@ -1,5 +1,6 @@
 "use client";
 import { useState, type FormEvent } from "react";
+import { userError } from "@/lib/user-error";
 import { useRouter } from "next/navigation";
 import { Loader2, Trash2 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
@@ -31,7 +32,7 @@ export default function AnnouncementManager({ items }: { items: Announcement[] }
 
     setBusy(false);
     if (insertError) {
-      setError(insertError.message);
+      setError(userError(t, insertError));
       return;
     }
     setTitle("");
@@ -49,7 +50,7 @@ export default function AnnouncementManager({ items }: { items: Announcement[] }
       .eq("id", id);
     setBusy(false);
 
-    if (updateError) setError(updateError.message);
+    if (updateError) setError(userError(t, updateError));
     else router.refresh();
   }
 
@@ -62,7 +63,7 @@ export default function AnnouncementManager({ items }: { items: Announcement[] }
       .eq("id", id);
     setBusy(false);
 
-    if (deleteError) setError(deleteError.message);
+    if (deleteError) setError(userError(t, deleteError));
     else router.refresh();
   }
 
@@ -122,7 +123,7 @@ export default function AnnouncementManager({ items }: { items: Announcement[] }
         </div>
 
         {error && (
-          <p className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600">{error}</p>
+          <p role="alert" className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600">{error}</p>
         )}
 
         <button
@@ -157,7 +158,7 @@ export default function AnnouncementManager({ items }: { items: Announcement[] }
                       {item.body}
                     </p>
                   )}
-                  <p className="mt-1.5 text-xs text-gray-400">
+                  <p className="mt-1.5 text-xs text-gray-600">
                     {item.event_at ??
                       new Date(item.created_at).toLocaleDateString(t.localeDate)}
                   </p>

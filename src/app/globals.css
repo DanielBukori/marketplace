@@ -17,6 +17,9 @@
   --animate-kenburns: kenburns 9s ease-out both;
   --animate-pop-in: pop-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-rise: rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* Utangulizi wa nembo: hujifunga bila JavaScript — mwisho wa mwendo
+     huweka `visibility: hidden`, kwa hivyo haibaki kizuia mibofyo. */
+  --animate-splash-close: splash-close 0.6s ease-in 1.5s both;
 
   @keyframes kenburns {
     from {
@@ -49,6 +52,17 @@
     }
   }
 
+  @keyframes splash-close {
+    from {
+      opacity: 1;
+      visibility: visible;
+    }
+    to {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+
   /* IAA Arusha — official blue */
   --color-primary-50: #eef4fa;
   --color-primary-100: #d8e6f3;
@@ -76,6 +90,12 @@
   body {
     @apply bg-paper-50 text-gray-900 antialiased;
   }
+  /* Alama ya wazi kwa vituo vya kadi (keyboard). `:where()` haioni
+     uzito, kwa hivyo `focus-visible:*` iliyo kwenye kitufe bado inashinda. */
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-primary-600);
+    outline-offset: 2px;
+  }
   /* Vichwa vyote hutumia fonti ya maonyesho: tofauti na maandishi ya
      kawaida, hivyo ukurasa unasomeka kama brand, si kama waraka. */
   h1,
@@ -94,6 +114,10 @@
   .animate-rise {
     animation: none !important;
   }
+  /* Hakuna utangulizi wa kusubiri kabisa: ukurasa unakanyika papo hapo. */
+  .iaa-splash {
+    display: none;
+  }
 }
 
 @utility no-scrollbar {
@@ -109,7 +133,7 @@
 }
 
 @utility field {
-  @apply w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100;
+  @apply w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-500 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100;
 }
 
 @utility chip {

@@ -12,11 +12,10 @@ export default function NotFound() {
         <Construction size={34} className="text-primary-700" />
       </span>
       <h1 className="mt-7 text-3xl font-extrabold tracking-tight text-ink-900">
-        Ukurasa haujajengwa bado
+        {t.notFound.title}
       </h1>
       <p className="mt-3 text-[15px] leading-relaxed text-gray-500">
-        Sehemu hii itaungana na database (Supabase). Kwa sasa unaweza kutembelea
-        sokoni au kuagiza msosi.
+        {t.notFound.desc}
       </p>
 
       <div className="mt-9 flex flex-wrap justify-center gap-3">

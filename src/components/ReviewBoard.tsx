@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { userError } from "@/lib/user-error";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -29,7 +30,7 @@ export default function ReviewBoard({ businesses }: { businesses: Business[] }) 
       .eq("id", id);
 
     setBusyId(null);
-    if (updateError) setError(updateError.message);
+    if (updateError) setError(userError(t, updateError));
     else router.refresh();
   }
 
@@ -44,7 +45,7 @@ export default function ReviewBoard({ businesses }: { businesses: Business[] }) 
   return (
     <div className="space-y-4">
       {error && (
-        <p className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600">{error}</p>
+        <p role="alert" className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600">{error}</p>
       )}
 
       {businesses.map((business) => (
@@ -60,7 +61,7 @@ export default function ReviewBoard({ businesses }: { businesses: Business[] }) 
                 ? fill(t.storefront.deliveryFee, { fee: formatTzs(business.delivery_fee) })
                 : t.admin.noDelivery}
             </p>
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="mt-1 text-xs text-gray-600">
               /{business.slug} ·{" "}
               {fill(t.admin.created, {
                 date: new Date(business.created_at).toLocaleDateString(t.localeDate),

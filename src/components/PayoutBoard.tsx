@@ -19,7 +19,7 @@ export default function PayoutBoard({
   const { t } = useLanguage();
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ text: string; bad: boolean } | null>(null);
   const [destinations, setDestinations] = useState<Record<string, string>>({});
 
   async function send(payoutId: string) {
@@ -32,10 +32,10 @@ export default function PayoutBoard({
         body: JSON.stringify({ payoutId }),
       });
       const body = (await response.json()) as { message?: string };
-      setNotice(body.message ?? t.common.error);
+      setNotice({ text: body.message ?? t.common.error, bad: !response.ok });
       if (response.ok) router.refresh();
     } catch {
-      setNotice(t.common.error);
+      setNotice({ text: t.common.error, bad: true });
     } finally {
       setBusyId(null);
     }
@@ -51,10 +51,10 @@ export default function PayoutBoard({
         body: JSON.stringify({ payoutId, destination }),
       });
       const body = (await response.json()) as { message?: string };
-      setNotice(body.message ?? t.dashboard.payoutUpdate);
+      setNotice({ text: body.message ?? t.dashboard.payoutUpdate, bad: !response.ok });
       if (response.ok) router.refresh();
     } catch {
-      setNotice(t.common.error);
+      setNotice({ text: t.common.error, bad: true });
     } finally {
       setBusyId(null);
     }
@@ -72,8 +72,13 @@ export default function PayoutBoard({
   return (
     <div className="space-y-8">
       {notice && (
-        <p className="rounded-2xl bg-primary-50 px-5 py-4 text-sm font-semibold text-primary-800">
-          {notice}
+        <p
+          role={notice.bad ? "alert" : "status"}
+          className={`rounded-2xl px-5 py-4 text-sm font-semibold ${
+            notice.bad ? "bg-accent-100 text-accent-600" : "bg-primary-50 text-primary-800"
+          }`}
+        >
+          {notice.text}
         </p>
       )}
 
@@ -148,7 +153,7 @@ export default function PayoutBoard({
                       </p>
                       <p className="mt-1 text-xs text-gray-500">
                         {payout.order ? `${t.dashboard.payoutFor} ${payout.order.reference}` : "—"} ·{" "}
-                        {new Date(payout.created_at).toLocaleString("sw-TZ")}
+                        {new Date(payout.created_at).toLocaleString(t.localeDate)}
                       </p>
                       {payout.failure_reason && (
                         <p className="mt-1 text-xs text-accent-600">{payout.failure_reason}</p>
@@ -174,6 +179,9 @@ export default function PayoutBoard({
                             [payout.id]: event.target.value,
                           }))
                         }
+                        type="tel"
+                        inputMode="tel"
+                        aria-label={t.dashboard.payoutDestination}
                         placeholder={t.dashboard.payoutDestination}
                         className="min-w-0 flex-1 rounded-xl border border-gray-200 px-4 py-2 text-sm focus:border-primary-500 focus:outline-none"
                       />

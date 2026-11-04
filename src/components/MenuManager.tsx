@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import { userError } from "@/lib/user-error";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Loader2, Trash2 } from "lucide-react";
@@ -55,7 +56,7 @@ export default function MenuManager({
     setBusy(false);
 
     if (insertError) {
-      setError(insertError.message);
+      setError(userError(t, insertError));
       return;
     }
 
@@ -73,7 +74,7 @@ export default function MenuManager({
       .from("menu_items")
       .update(changes)
       .eq("id", id);
-    if (updateError) setError(updateError.message);
+    if (updateError) setError(userError(t, updateError));
     else router.refresh();
   }
 
@@ -88,7 +89,7 @@ export default function MenuManager({
     if (!deleteError && photo) {
       await supabase.storage.from("media").remove([photo]);
     }
-    if (deleteError) setError(deleteError.message);
+    if (deleteError) setError(userError(t, deleteError));
     else router.refresh();
   }
 
@@ -159,7 +160,7 @@ export default function MenuManager({
         </div>
 
         {error && (
-          <p className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600">
+          <p role="alert" className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600">
             {error}
           </p>
         )}

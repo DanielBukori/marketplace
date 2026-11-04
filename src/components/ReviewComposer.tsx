@@ -1,5 +1,6 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { userError } from "@/lib/user-error";
 import { useRouter } from "next/navigation";
 import { Loader2, Star } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
@@ -28,6 +29,12 @@ export default function ReviewComposer({
   const [itemId, setItemId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Kwa kivinjari cha sauti kosa husomeka tu mtu anaporudi nyuma,
+  // hivyo humpokea focus mara ombi linaposhindwa.
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (error) errorRef.current?.focus();
+  }, [error]);
   const [done, setDone] = useState(false);
 
   const foodLines = lines.filter(
@@ -56,7 +63,7 @@ export default function ReviewComposer({
     setBusy(false);
 
     if (insertError) {
-      setError(insertError.message);
+      setError(userError(t, insertError));
       return;
     }
 
@@ -66,7 +73,7 @@ export default function ReviewComposer({
 
   if (done) {
     return (
-      <p className="rounded-2xl bg-primary-50 px-5 py-4 text-sm font-semibold text-primary-800">
+      <p role="status" className="rounded-2xl bg-primary-50 px-5 py-4 text-sm font-semibold text-primary-800">
         {t.reviews.thanks}
       </p>
     );
@@ -86,14 +93,29 @@ export default function ReviewComposer({
         role="radiogroup"
         aria-label={t.reviews.starsLabel}
         className="flex items-center gap-1"
+        onKeyDown={(e) => {
+          const step =
+            e.key === "ArrowRight" || e.key === "ArrowUp"
+              ? 1
+              : e.key === "ArrowLeft" || e.key === "ArrowDown"
+                ? -1
+                : 0;
+          if (step === 0) return;
+          e.preventDefault();
+          const next = Math.min(5, Math.max(1, (rating || 1) + step));
+          setRating(next);
+          document.getElementById(`review-star-${next}`)?.focus();
+        }}
       >
         {[1, 2, 3, 4, 5].map((value) => (
           <button
             key={value}
+            id={`review-star-${value}`}
             type="button"
             role="radio"
             aria-checked={rating === value}
             aria-label={`${value} / 5`}
+            tabIndex={rating === value || (rating === 0 && value === 1) ? 0 : -1}
             onClick={() => setRating(value)}
             className="rounded-lg p-1 transition hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary-500"
           >
@@ -146,7 +168,12 @@ export default function ReviewComposer({
       </label>
 
       {error && (
-        <p className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600">{error}</p>
+        <p
+          role="alert"
+          ref={errorRef}
+          tabIndex={-1}
+          className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600"
+        >{error}</p>
       )}
 
       <button

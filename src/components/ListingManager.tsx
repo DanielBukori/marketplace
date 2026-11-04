@@ -1,5 +1,6 @@
 "use client";
 import Image from "next/image";
+import { userError } from "@/lib/user-error";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -41,7 +42,7 @@ export default function ListingManager({
       .eq("id", id);
     setBusyId(null);
 
-    if (updateError) setError(updateError.message);
+    if (updateError) setError(userError(t, updateError));
     else router.refresh();
   }
 
@@ -82,7 +83,7 @@ export default function ListingManager({
       </div>
 
       {error && (
-        <p className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600">
+        <p role="alert" className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600">
           {error}
         </p>
       )}

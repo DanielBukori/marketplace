@@ -4,13 +4,24 @@ import SetupNotice from "@/components/SetupNotice";
 import { getFoodBoard, getLiveAds } from "@/lib/db";
 import { getT } from "@/lib/i18n-server";
 import { isSupabaseConfigured } from "@/lib/media";
+import { pageMeta } from "@/lib/seo";
+import type { Ad, Business, MenuItem } from "@/lib/types";
+
+export async function generateMetadata() {
+  const t = await getT();
+  return pageMeta("/msosi", t.meta.pages.food.title, t.meta.pages.food.desc);
+}
 
 export default async function MsosiPage() {
   const t = await getT();
-  const board = isSupabaseConfigured
-    ? await getFoodBoard()
-    : { businesses: [], menu: [] };
-  const ads = isSupabaseConfigured ? await getLiveAds("msosi") : [];
+  let board: { businesses: Business[]; menu: MenuItem[] } = {
+    businesses: [],
+    menu: [],
+  };
+  let ads: Ad[] = [];
+  if (isSupabaseConfigured) {
+    [board, ads] = await Promise.all([getFoodBoard(), getLiveAds("msosi")]);
+  }
 
   return (
     <div className="w-full pb-24">

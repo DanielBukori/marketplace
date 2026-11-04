@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/require-user";
-import { getBusinessOrders, getMyBusinesses } from "@/lib/db";
+import {
+  getApprovedCouriers,
+  getBusinessOrders,
+  getMyBusinesses,
+} from "@/lib/db";
 import OrdersInbox from "@/components/OrdersInbox";
 import { isSupabaseConfigured } from "@/lib/media";
 import { getT } from "@/lib/i18n-server";
@@ -11,7 +15,6 @@ export default async function VendorOrdersPage() {
   if (!isSupabaseConfigured) return <SetupNotice />;
   const user = await requireUser("/dashboard/orders");
   const businesses = await getMyBusinesses(user.id);
-  const orders = await getBusinessOrders(businesses.map((b) => b.id));
 
   if (businesses.length === 0) {
     return (
@@ -27,6 +30,13 @@ export default async function VendorOrdersPage() {
     );
   }
 
+  // Oda na orodha ya wajumbe hutajwa kwa wakati mmoja: muuzi anayopanga
+  // kazi anakabiliwa na orodha tayari imepakia.
+  const [orders, couriers] = await Promise.all([
+    getBusinessOrders(businesses.map((b) => b.id)),
+    getApprovedCouriers(),
+  ]);
+
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 py-12 sm:px-6 lg:px-8">
       <div>
@@ -36,7 +46,7 @@ export default async function VendorOrdersPage() {
         <p className="mt-2 text-[15px] text-gray-500">{t.dashboard.vendorOrdersDesc}</p>
       </div>
 
-      <OrdersInbox orders={orders} canManage />
+      <OrdersInbox orders={orders} couriers={couriers} canManage />
     </div>
   );
 }

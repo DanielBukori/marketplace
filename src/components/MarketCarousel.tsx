@@ -83,12 +83,17 @@ export default function MarketCarousel() {
             type="button"
             aria-label={fill(t.market.slideAria, { n: i + 1 })}
             onClick={() => setIndex(i)}
-            className={`h-2 rounded-full transition-all ${
-              i === index
-                ? "w-6 bg-primary-800"
-                : "w-2 bg-gray-300 hover:bg-gray-400"
-            }`}
-          />
+            className="group flex h-6 w-6 shrink-0 items-center justify-center"
+          >
+            <span
+              aria-hidden
+              className={`block h-2 rounded-full transition-all ${
+                i === index
+                  ? "w-6 bg-primary-800"
+                  : "w-2 bg-gray-300 group-hover:bg-gray-500"
+              }`}
+            />
+          </button>
         ))}
       </div>
     </div>

@@ -1,5 +1,6 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { userError } from "@/lib/user-error";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
@@ -55,6 +56,12 @@ export default function ListingForm({
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Kwa kivinjari cha sauti kosa husomeka tu mtu anaporudi nyuma,
+  // hivyo humpokea focus mara ombi linaposhindwa.
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    if (error) errorRef.current?.focus();
+  }, [error]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -101,7 +108,7 @@ export default function ListingForm({
     setBusy(false);
 
     if (result.error) {
-      setError(result.error.message);
+      setError(userError(t, result.error));
       return;
     }
     router.push("/dashboard");
@@ -120,7 +127,7 @@ export default function ListingForm({
       await supabase.storage.from("media").remove(photoPaths);
     }
     setBusy(false);
-    if (deleteError) setError(deleteError.message);
+    if (deleteError) setError(userError(t, deleteError));
     else {
       router.push("/dashboard");
       router.refresh();
@@ -265,6 +272,9 @@ export default function ListingForm({
           <input
             value={whatsapp}
             onChange={(e) => setWhatsapp(e.target.value)}
+            type="tel"
+            autoComplete="tel"
+            inputMode="tel"
             placeholder="2557..."
             className="field"
           />
@@ -282,7 +292,12 @@ export default function ListingForm({
       </label>
 
       {error && (
-        <p className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600">
+        <p
+          role="alert"
+          ref={errorRef}
+          tabIndex={-1}
+          className="rounded-xl bg-accent-100 px-4 py-3 text-sm text-accent-600"
+        >
           {error}
         </p>
       )}

@@ -11,8 +11,10 @@ export default async function PayoutsPage() {
   if (!isSupabaseConfigured) return <SetupNotice />;
   const user = await requireUser("/dashboard/payouts");
 
-  const businesses = await getMyBusinesses(user.id);
-  const profile = await getProfile(user.id);
+  const [businesses, profile] = await Promise.all([
+    getMyBusinesses(user.id),
+    getProfile(user.id),
+  ]);
 
   const [payouts, queue] = await Promise.all([
     getMyPayouts(businesses.map((business) => business.id)),

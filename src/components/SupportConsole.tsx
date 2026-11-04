@@ -12,6 +12,7 @@ const STATUSES: OrderStatus[] = [
   "confirmed",
   "preparing",
   "ready",
+  "out_for_delivery",
   "completed",
   "cancelled",
 ];
@@ -37,7 +38,7 @@ export default function SupportConsole({
   const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ text: string; bad: boolean } | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
 
   const filters: { key: string; label: string }[] = [
@@ -78,16 +79,17 @@ export default function SupportConsole({
       };
 
       if (!response.ok) {
-        setNotice(body.message ?? t.common.error);
+        setNotice({ text: body.message ?? t.common.error, bad: true });
       } else {
-        setNotice(
-          body.payoutQueued ? t.support.savedWithPayout : t.support.saved,
-        );
+        setNotice({
+          text: body.payoutQueued ? t.support.savedWithPayout : t.support.saved,
+          bad: false,
+        });
         setNotes((current) => ({ ...current, [order.id]: "" }));
         router.refresh();
       }
     } catch {
-      setNotice(t.common.error);
+      setNotice({ text: t.common.error, bad: true });
     } finally {
       setBusy(false);
     }
@@ -104,11 +106,13 @@ export default function SupportConsole({
         <div className="field relative min-w-0 flex-1">
           <Search
             size={16}
-            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"
           />
           <input
             name="q"
+            type="search"
             defaultValue={search}
+            aria-label={t.support.searchPlaceholder}
             placeholder={t.support.searchPlaceholder}
             className="w-full pl-11"
           />
@@ -134,8 +138,13 @@ export default function SupportConsole({
       </div>
 
       {notice && (
-        <p className="rounded-2xl bg-primary-50 px-5 py-4 text-sm font-semibold text-primary-800">
-          {notice}
+        <p
+          role={notice.bad ? "alert" : "status"}
+          className={`rounded-2xl px-5 py-4 text-sm font-semibold ${
+            notice.bad ? "bg-accent-100 text-accent-600" : "bg-primary-50 text-primary-800"
+          }`}
+        >
+          {notice.text}
         </p>
       )}
 
@@ -309,7 +318,7 @@ export default function SupportConsole({
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-bold uppercase tracking-[0.12em] text-gray-400">
+      <dt className="text-xs font-bold uppercase tracking-[0.12em] text-gray-600">
         {label}
       </dt>
       <dd className="mt-0.5 text-ink-900">{value}</dd>

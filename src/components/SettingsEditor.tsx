@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { userError } from "@/lib/user-error";
 import { useRouter } from "next/navigation";
 import { LoaderCircle, Save } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
@@ -33,7 +34,7 @@ export default function SettingsEditor({
   const [extraKey, setExtraKey] = useState("");
   const [extraValue, setExtraValue] = useState("");
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ text: string; bad: boolean } | null>(null);
 
   async function save(entries: Record<string, string>) {
     setBusy(true);
@@ -43,7 +44,7 @@ export default function SettingsEditor({
       .map(([key, value]) => ({ key, value: value.trim().slice(0, 300) }));
 
     if (rows.length === 0) {
-      setNotice(t.settings.needKey);
+      setNotice({ text: t.settings.needKey, bad: true });
       setBusy(false);
       return;
     }
@@ -52,9 +53,9 @@ export default function SettingsEditor({
       onConflict: "key",
     });
 
-    if (error) setNotice(error.message);
+    if (error) setNotice({ text: userError(t, error), bad: true });
     else {
-      setNotice(t.settings.saved);
+      setNotice({ text: t.settings.saved, bad: false });
       router.refresh();
     }
     setBusy(false);
@@ -91,8 +92,13 @@ export default function SettingsEditor({
         </div>
 
         {notice && (
-          <p className="rounded-2xl bg-primary-50 px-4 py-3 text-sm font-semibold text-primary-800">
-            {notice}
+          <p
+            role={notice.bad ? "alert" : "status"}
+            className={`rounded-2xl px-4 py-3 text-sm font-semibold ${
+              notice.bad ? "bg-accent-100 text-accent-600" : "bg-primary-50 text-primary-800"
+            }`}
+          >
+            {notice.text}
           </p>
         )}
 

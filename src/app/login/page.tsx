@@ -126,7 +126,24 @@ export default function LoginPage() {
     if (text.includes("token")) return t.auth.errToken;
     if (text.includes("redirect")) return t.auth.errRedirect;
     if (text.includes("signup")) return t.auth.errSignupDisabled;
+    if (text.includes("badly formatted") || text.includes("invalid email"))
+      return t.auth.errBadEmail;
+    if (text.includes("not confirmed")) return t.auth.errNotConfirmed;
     return null;
+  }
+
+  // Nakala yetu ndiyo huongoza mtumiaji; neno la Supabase lisonekane tu
+  // kwa mtengenezaji.
+  function errorNote(raw: string) {
+    const hint = hintFor(raw);
+    return (
+      <div role="alert" className="rounded-xl bg-accent-100 px-4 py-3">
+        <p className="text-sm font-semibold text-accent-600">{hint ?? raw}</p>
+        {hint && process.env.NODE_ENV === "development" && (
+          <p className="mt-1 font-mono text-[11px] leading-relaxed text-gray-600">{raw}</p>
+        )}
+      </div>
+    );
   }
 
   async function continueWithGoogle() {
@@ -261,16 +278,7 @@ export default function LoginPage() {
                   className="field text-center font-display text-xl font-bold tracking-[0.45em]"
                 />
 
-                {error && (
-                  <div className="rounded-xl bg-accent-100 px-4 py-3">
-                    <p className="text-sm font-semibold text-accent-600">{error}</p>
-                    {hintFor(error) && (
-                      <p className="mt-1 text-xs leading-relaxed text-accent-600">
-                        {hintFor(error)}
-                      </p>
-                    )}
-                  </div>
-                )}
+                {error && errorNote(error)}
 
                 <button
                   type="submit"
@@ -305,7 +313,11 @@ export default function LoginPage() {
                   <p className="mt-1 text-xs leading-relaxed text-accent-600">
                     {hintFor(linkError) ?? t.auth.linkErrorBody}
                   </p>
-                  <p className="mt-2 text-[11px] leading-relaxed text-gray-500">{linkError}</p>
+                  {process.env.NODE_ENV === "development" && (
+                    <p className="mt-2 font-mono text-[11px] leading-relaxed text-gray-600">
+                      {linkError}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -318,7 +330,7 @@ export default function LoginPage() {
 
               <div className="flex items-center gap-3 py-1">
                 <span className="h-px flex-1 bg-paper-200" />
-                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-400">
+                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-600">
                   {t.auth.or}
                 </span>
                 <span className="h-px flex-1 bg-paper-200" />
@@ -339,16 +351,7 @@ export default function LoginPage() {
                 disabled
               />
 
-              {error && (
-                <div className="rounded-xl bg-accent-100 px-4 py-3">
-                  <p className="text-sm font-semibold text-accent-600">{error}</p>
-                  {hintFor(error) && (
-                    <p className="mt-1 text-xs leading-relaxed text-accent-600">
-                      {hintFor(error)}
-                    </p>
-                  )}
-                </div>
-              )}
+              {error && errorNote(error)}
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -364,13 +367,13 @@ export default function LoginPage() {
               <div>
                 <label className="mb-1.5 block text-sm font-semibold text-ink-900" htmlFor="name">
                   {t.auth.fullName}{" "}
-                  <span className="font-normal text-gray-400">({t.common.optional})</span>
+                  <span className="font-normal text-gray-600">({t.common.optional})</span>
                 </label>
                 <div className="relative">
                   <User
                     aria-hidden
                     size={18}
-                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"
                   />
                   <input
                     id="name"
@@ -392,7 +395,7 @@ export default function LoginPage() {
                   <Mail
                     aria-hidden
                     size={18}
-                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"
                   />
                   <input
                     id="email"
@@ -410,13 +413,13 @@ export default function LoginPage() {
               <div>
                 <label className="mb-1.5 block text-sm font-semibold text-ink-900" htmlFor="phone">
                   {t.auth.phone}{" "}
-                  <span className="font-normal text-gray-400">({t.common.optional})</span>
+                  <span className="font-normal text-gray-600">({t.common.optional})</span>
                 </label>
                 <div className="relative">
                   <Phone
                     aria-hidden
                     size={18}
-                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"
                   />
                   <input
                     id="phone"
@@ -430,16 +433,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {error && (
-                <div className="rounded-xl bg-accent-100 px-4 py-3">
-                  <p className="text-sm font-semibold text-accent-600">{error}</p>
-                  {hintFor(error) && (
-                    <p className="mt-1 text-xs leading-relaxed text-accent-600">
-                      {hintFor(error)}
-                    </p>
-                  )}
-                </div>
-              )}
+              {error && errorNote(error)}
 
               <button
                 type="submit"
@@ -464,18 +458,26 @@ export default function LoginPage() {
         </div>
 
         {isSupabaseConfigured && (
-          <p className="border-t border-paper-200 bg-paper-50 px-6 py-4 text-center text-[11px] leading-relaxed text-gray-400">
+          <p className="border-t border-paper-200 bg-paper-50 px-6 py-4 text-center text-[11px] leading-relaxed text-gray-600">
             {t.auth.agreement}
           </p>
         )}
       </div>
 
-      <Link
-        href="/"
-        className="mt-6 inline-flex items-center justify-center gap-2 text-sm font-medium text-gray-500 hover:text-primary-700"
-      >
-        <ArrowLeft size={16} /> {t.auth.backHome}
-      </Link>
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+        <Link
+          href="/"
+          className="inline-flex items-center justify-center gap-2 text-sm font-medium text-gray-500 hover:text-primary-700"
+        >
+          <ArrowLeft size={16} /> {t.auth.backHome}
+        </Link>
+        <Link
+          href="/get-started"
+          className="text-sm font-semibold text-primary-700 underline-offset-4 hover:underline"
+        >
+          {t.nav.getStarted}
+        </Link>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/require-user";
-import { getMyBusinesses } from "@/lib/db";
+import { getActiveZones, getBusinessZoneIds, getMyBusinesses } from "@/lib/db";
 import BusinessForm from "@/components/BusinessForm";
+import BusinessZonesPicker from "@/components/BusinessZonesPicker";
 import { getT } from "@/lib/i18n-server";
 import { isSupabaseConfigured } from "@/lib/media";
 import SetupNotice from "@/components/SetupNotice";
@@ -20,6 +21,11 @@ export default async function EditBusinessPage({
   const business = businesses.find((b) => b.id === id);
   if (!business) notFound();
 
+  const [zones, selected] = await Promise.all([
+    getActiveZones(),
+    getBusinessZoneIds(business.id),
+  ]);
+
   return (
     <div className="mx-auto max-w-3xl space-y-8 px-4 py-12 sm:px-6 lg:px-8">
       <div>
@@ -30,6 +36,12 @@ export default async function EditBusinessPage({
       </div>
 
       <BusinessForm userId={user.id} business={business} />
+
+      <BusinessZonesPicker
+        businessId={business.id}
+        zones={zones}
+        selected={selected}
+      />
 
       <div className="grid gap-3 sm:grid-cols-2">
         <a

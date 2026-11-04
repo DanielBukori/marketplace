@@ -3,7 +3,16 @@ import { getMyBusinesses } from "@/lib/db";
 import ListingForm from "@/components/ListingForm";
 import { isSupabaseConfigured } from "@/lib/media";
 import { getT } from "@/lib/i18n-server";
+import { noIndexMeta } from "@/lib/seo";
 import SetupNotice from "@/components/SetupNotice";
+
+export async function generateMetadata() {
+  const t = await getT();
+  return {
+    ...noIndexMeta,
+    title: `${t.post.title} · ${t.brand.name} ${t.brand.suffix}`,
+  };
+}
 
 export default async function PostPage() {
   const t = await getT();

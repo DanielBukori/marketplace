@@ -6,8 +6,10 @@ export type OrderStatus =
   | "confirmed"
   | "preparing"
   | "ready"
+  | "out_for_delivery"
   | "completed"
   | "cancelled";
+export type CourierStatus = "none" | "pending" | "approved" | "rejected";
 export type PaymentStatus =
   | "unpaid"
   | "awaiting_payment"
@@ -43,6 +45,22 @@ export type Profile = {
   hall: string | null;
   avatar_path: string | null;
   is_admin: boolean;
+  created_at?: string;
+  // Safu hizi zinaonekana tu baada ya migration ya upelekezaji kutumika,
+  // kwa hivyo ni za hiari — msomaji lazima akabalike kutokuwepo kwazo.
+  courier_status?: CourierStatus;
+  courier_requested_at?: string | null;
+  courier_approved_at?: string | null;
+  courier_approved_by?: string | null;
+};
+
+export type DeliveryZone = {
+  id: string;
+  name: string;
+  note: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
 };
 
 export type Business = {
@@ -206,6 +224,7 @@ export type OrderEvent = {
   status: string;
   note: string;
   created_at: string;
+  actor_id?: string | null;
 };
 
 export type Order = {
@@ -231,12 +250,19 @@ export type Order = {
   meetup_point: string;
   note: string;
   scheduled_at: string | null;
+  // Upelekezaji: eneo la chuo lililochaguliwa (nakala ya jina) na msabishi
+  // aliempanga muuzi. Zinaonekana tu baada ya migration kutumika.
+  delivery_zone_id?: string | null;
+  delivery_zone_name?: string;
+  courier_id?: string | null;
+  courier_assigned_at?: string | null;
   created_at: string;
   completed_at: string | null;
   business?: Pick<Business, "id" | "name" | "slug">;
   items?: OrderItem[];
   events?: OrderEvent[];
   buyer?: Pick<Profile, "id" | "full_name" | "phone">;
+  courier?: Pick<Profile, "id" | "full_name" | "phone"> | null;
   has_review?: boolean;
 };
 

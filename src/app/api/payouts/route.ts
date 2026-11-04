@@ -1,34 +1,38 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requireAdminActor as adminActor } from "@/lib/admin-actor";
+import { getT } from "@/lib/i18n-server";
 import { createAdminClient, isAdminClientConfigured } from "@/lib/supabase/admin";
 import { isSupabaseConfigured } from "@/lib/media";
 import { createDisbursement, isSnippeConfigured, type SnippeChannel } from "@/lib/snippe";
+import { userError } from "@/lib/user-error";
 import type { Payout } from "@/lib/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Kubadilisha namba ya muuzi kwenye foli kabla pesa haijatumwa. */
 export async function PATCH(request: NextRequest) {
+  const t = await getT();
+
   if (!isSupabaseConfigured || !isAdminClientConfigured) {
-    return NextResponse.json({ message: "Hifadhidata haijaunganishwa." }, { status: 503 });
+    return NextResponse.json({ message: t.api.dbNotConfigured }, { status: 503 });
   }
 
-  const actor = await adminActor();
+  const actor = await adminActor(t);
   if ("error" in actor) return actor.error;
 
   let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ message: "Ombi halinasoma." }, { status: 400 });
+    return NextResponse.json({ message: t.api.badRequest }, { status: 400 });
   }
 
   const payoutId = String(body.payoutId ?? "");
   const destination = String(body.destination ?? "").replace(/[^0-9+A-Za-z]/g, "").slice(0, 40);
 
   if (!UUID.test(payoutId) || destination.length < 4) {
-    return NextResponse.json({ message: "Weka namba sahihi ya muuzi." }, { status: 400 });
+    return NextResponse.json({ message: t.api.needSellerPhone }, { status: 400 });
   }
 
   const { error } = await createAdminClient()
@@ -37,7 +41,7 @@ export async function PATCH(request: NextRequest) {
     .eq("id", payoutId)
     .in("status", ["queued", "failed"]);
 
-  if (error) return NextResponse.json({ message: error.message }, { status: 400 });
+  if (error) return NextResponse.json({ message: userError(t, error) }, { status: 400 });
   return NextResponse.json({ saved: true });
 }
 
@@ -46,16 +50,18 @@ export async function PATCH(request: NextRequest) {
  * ya mfumo hutoka pale pekee, baada ya oda kukamilika.
  */
 export async function POST(request: NextRequest) {
+  const t = await getT();
+
   if (!isSupabaseConfigured) {
-    return NextResponse.json({ message: "Hifadhidata haijaunganishwa." }, { status: 503 });
+    return NextResponse.json({ message: t.api.dbNotConfigured }, { status: 503 });
   }
 
-  const actor = await adminActor();
+  const actor = await adminActor(t);
   if ("error" in actor) return actor.error;
 
   if (!isSnippeConfigured || !isAdminClientConfigured) {
     return NextResponse.json(
-      { message: "Snippe au fungo la seva halijawekwa; malipo hayawezi kutumwa kwa simu." },
+      { message: t.api.disburseNotConfigured },
       { status: 503 },
     );
   }
@@ -64,12 +70,12 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ message: "Ombi halinasoma." }, { status: 400 });
+    return NextResponse.json({ message: t.api.badRequest }, { status: 400 });
   }
 
   const payoutId = String(body.payoutId ?? "");
   if (!UUID.test(payoutId)) {
-    return NextResponse.json({ message: "Kitambulisho si sahihi." }, { status: 400 });
+    return NextResponse.json({ message: t.api.badId }, { status: 400 });
   }
 
   const admin = createAdminClient();
@@ -84,27 +90,27 @@ export async function POST(request: NextRequest) {
     | null;
 
   if (!payout) {
-    return NextResponse.json({ message: "Foli ya malipo haipatikani." }, { status: 404 });
+    return NextResponse.json({ message: t.api.payoutNotFound }, { status: 404 });
   }
   if (payout.status === "sent" || payout.status === "processing") {
-    return NextResponse.json({ message: "Malipo haya tayari yameshatuma." });
+    return NextResponse.json({ message: t.api.payoutAlreadySent });
   }
   if (payout.order?.status !== "completed") {
     return NextResponse.json(
-      { message: "Oda hii haijakamilika — pesa ya muuzi hutumwa baada ya mnunuzi kupokea." },
+      { message: t.api.orderNotCompleted },
       { status: 400 },
     );
   }
   if (payout.order?.payment_status !== "paid") {
     return NextResponse.json(
-      { message: "Mfumo hukabidhi pesa tu za oda zilizolipwa kwa Snippe." },
+      { message: t.api.dbPaidOnly },
       { status: 400 },
     );
   }
 
   if (payout.method === "bank") {
     return NextResponse.json(
-      { message: "Malipo ya benki hubreshwa nje ya API hii; weka hali mwenyewe." },
+      { message: t.api.bankOutsideApi },
       { status: 400 },
     );
   }
@@ -112,7 +118,7 @@ export async function POST(request: NextRequest) {
   const phone = payout.destination.replace(/[^\d+]/g, "");
   if (phone.replace(/\D/g, "").length < 9) {
     return NextResponse.json(
-      { message: "Ongeza namba ya muuzi kwenye foli hii kabla ya kutuma." },
+      { message: t.api.sellerPhoneOnPayout },
       { status: 400 },
     );
   }

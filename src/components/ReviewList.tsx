@@ -51,7 +51,7 @@ export default function ReviewList({
             <StarRating value={review.rating} />
           </div>
 
-          <p className="mt-1 text-xs text-gray-400">
+          <p className="mt-1 text-xs text-gray-600">
             {new Date(review.created_at).toLocaleDateString(locale)}
             {review.menu_item?.name && (
               <>

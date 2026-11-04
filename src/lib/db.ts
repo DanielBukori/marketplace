@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type {
   Ad,
@@ -5,6 +6,7 @@ import type {
   AdPlan,
   Announcement,
   Business,
+  DeliveryZone,
   Listing,
   MenuItem,
   Offer,
@@ -52,7 +54,9 @@ export async function getActiveListings(
   return (data ?? []) as unknown as Listing[];
 }
 
-export async function getListing(id: string): Promise<Listing | null> {
+export const getListing = cache(async function getListing(
+  id: string,
+): Promise<Listing | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("listings")
@@ -62,7 +66,7 @@ export async function getListing(id: string): Promise<Listing | null> {
 
   if (error) throw error;
   return (data as unknown as Listing) ?? null;
-}
+});
 
 export async function getActiveBusinesses(kind?: Business["kind"]): Promise<Business[]> {
   const supabase = await createClient();
@@ -168,11 +172,24 @@ export async function getAllBusinesses(): Promise<Business[]> {
   return (data ?? []) as unknown as Business[];
 }
 
+const PROFILE_BASE_FIELDS = "id, full_name, phone, hall, avatar_path, is_admin, created_at";
+const PROFILE_FIELDS = `${PROFILE_BASE_FIELDS}, courier_status, courier_requested_at, courier_approved_at`;
+
 export async function getProfile(userId: string): Promise<Profile | null> {
   const supabase = await createClient();
+  const full = await supabase
+    .from("profiles")
+    .select(PROFILE_FIELDS)
+    .eq("id", userId)
+    .maybeSingle();
+
+  // Migration ya upelekezaji bado haijatumika? Rudia swali bila safu hizo
+  // ili kurasa zisishindwe na safu tu mbili zisizopo.
+  if (!full.error) return (full.data ?? null) as Profile | null;
+
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, phone, hall, avatar_path, is_admin")
+    .select(PROFILE_BASE_FIELDS)
     .eq("id", userId)
     .maybeSingle();
 
@@ -218,13 +235,16 @@ export async function getFoodBoard() {
     .select(MENU_FIELDS)
     .in("business_id", businesses.map((b) => b.id))
     .eq("is_available", true)
-    .order("slot");
+    .order("slot")
+    .limit(400);
 
   if (error) throw error;
   return { businesses, menu: (data ?? []) as unknown as MenuItem[] };
 }
 
-export async function getBusinessBySlug(slug: string) {
+export const getBusinessBySlug = cache(async function getBusinessBySlug(
+  slug: string,
+) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("businesses")
@@ -242,20 +262,23 @@ export async function getBusinessBySlug(slug: string) {
       .select(MENU_FIELDS)
       .eq("business_id", business.id)
       .eq("is_available", true)
-      .order("slot"),
+      .order("slot")
+      .limit(100),
     supabase
       .from("listings")
       .select(LISTING_FIELDS)
       .eq("business_id", business.id)
       .eq("status", "active")
-      .order("published_at", { ascending: false }),
+      .order("published_at", { ascending: false })
+      .limit(60),
     supabase
       .from("offers")
       .select("*")
       .eq("business_id", business.id)
       .eq("is_active", true)
       .lte("starts_at", new Date().toISOString())
-      .order("percent_off", { ascending: false }),
+      .order("percent_off", { ascending: false })
+      .limit(20),
     supabase
       .from("reviews")
       .select(REVIEW_FIELDS)
@@ -279,7 +302,7 @@ export async function getBusinessBySlug(slug: string) {
     ),
     reviews: (reviews.data ?? []) as unknown as Review[],
   };
-}
+});
 
 export async function getBuyerOrders(buyerId: string): Promise<Order[]> {
   const supabase = await createClient();
@@ -487,16 +510,18 @@ export async function getLiveAds(placement: AdPlacement): Promise<Ad[]> {
     )
     .eq("status", "live")
     .order("ends_at", { ascending: true })
-    .limit(12);
+    .limit(200);
 
   if (error) return [];
   const now = Date.now();
-  return ((data ?? []) as unknown as Ad[]).filter(
-    (ad) =>
-      ad.business?.id &&
-      (ad.plan?.placement ?? placement) === placement &&
-      (!ad.ends_at || Date.parse(ad.ends_at) > now),
-  );
+  return ((data ?? []) as unknown as Ad[])
+    .filter(
+      (ad) =>
+        ad.business?.id &&
+        (ad.plan?.placement ?? placement) === placement &&
+        (!ad.ends_at || Date.parse(ad.ends_at) > now),
+    )
+    .slice(0, 12);
 }
 
 export async function getMyAds(businessIds: string[]): Promise<Ad[]> {
@@ -562,9 +587,13 @@ export async function getAllOrders(
   search = "",
 ): Promise<Order[]> {
   const supabase = await createClient();
+  // `orders` ina ufunguo mwingi kwenda `profiles` — mnunuzi na msabishi.
+  // PostgREST huhitaji jina la ufunguo ili asiyababe kitu kisicho na mwiri.
   let query = supabase
     .from("orders")
-    .select(`${ORDER_FIELDS}, buyer:profiles(id, full_name, phone, avatar_path)`)
+    .select(
+      `${ORDER_FIELDS}, buyer:profiles!orders_buyer_id_fkey(id, full_name, phone, avatar_path)`,
+    )
     .order("created_at", { ascending: false })
     .limit(80);
 
@@ -641,3 +670,156 @@ export type AdminStats = {
   openOrders: number;
   submittedAds: number;
 };
+
+/**
+ * ---------------------------------------------------------------------
+ * Upelekezaji — maeneo ya chuo na wajumbe
+ * ---------------------------------------------------------------------
+ */
+
+const ZONE_FIELDS = "id, name, note, sort_order, is_active, created_at";
+
+/** Maeneo yaliyoamilishwa, kwa mpangilio alio_weka msimamizi. */
+export async function getActiveZones(): Promise<DeliveryZone[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("delivery_zones")
+    .select(ZONE_FIELDS)
+    .eq("is_active", true)
+    .order("sort_order")
+    .order("name");
+
+  if (error) return [];
+  return (data ?? []) as unknown as DeliveryZone[];
+}
+
+/** Orodha ya msimamizi: maeneo yote, hai na yaliyozimwa. */
+export async function getAllZones(): Promise<DeliveryZone[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("delivery_zones")
+    .select(ZONE_FIELDS)
+    .order("sort_order")
+    .order("name");
+
+  if (error) throw error;
+  return (data ?? []) as unknown as DeliveryZone[];
+}
+
+/** Vitambulisho vya maeneo ambayo biashara imeweka kwenye orodha yake. */
+export async function getBusinessZoneIds(businessId: string): Promise<string[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("business_zones")
+    .select("zone_id")
+    .eq("business_id", businessId);
+
+  // Hifadhidata haijapata migration ya upelekezaji: ruikia thamani tupu
+  // badala ya kupitisha kosa kwenye ukurasa wa kuweka oda.
+  if (error) return [];
+  return (data ?? []).map((row) => String(row.zone_id));
+}
+
+/**
+ * Maeneo mnunuzi anaweza kuchagua katika duka hili. Biashara isiyo na
+ * orodha yake inatumikia kila eneo hai.
+ *
+ * Thamani `null` ina maana tofauti na orodha tupu: jedwali halipo bado
+ * (migration haijatumika), kwa hivyo mtumiaji hapaswi kulazimishwa
+ * kuchagua eneo. Orodha tupu ina maana kwamba msimamizi hujaongeza
+ * eneo hata moja.
+ */
+export async function getZonesForBusiness(businessId: string): Promise<DeliveryZone[] | null> {
+  const supabase = await createClient();
+  const zonesQuery = await supabase
+    .from("delivery_zones")
+    .select(ZONE_FIELDS)
+    .eq("is_active", true)
+    .order("sort_order")
+    .order("name");
+
+  if (zonesQuery.error) return null;
+
+  const zones = (zonesQuery.data ?? []) as unknown as DeliveryZone[];
+  const chosen = await getBusinessZoneIds(businessId);
+  if (chosen.length === 0) return zones;
+
+  const wanted = new Set(chosen);
+  return zones.filter((zone) => wanted.has(zone.id));
+}
+
+/** Wajumbe walioidhinishwa — orodha muuzi anayopanga kazi. */
+export async function getApprovedCouriers(): Promise<Profile[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, phone, courier_approved_at")
+    .eq("courier_status", "approved")
+    .order("full_name")
+    .limit(100);
+
+  if (error) return [];
+  return (data ?? []) as unknown as Profile[];
+}
+
+/** Maombi ya usabishi yanayosubiri msimamizi. */
+export async function getCourierRequests(): Promise<Profile[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, phone, hall, courier_status, courier_requested_at")
+    .eq("courier_status", "pending")
+    .order("courier_requested_at")
+    .limit(100);
+
+  if (error) return [];
+  return (data ?? []) as unknown as Profile[];
+}
+
+/** Hesabu ya maombi yanayosubiri — badge ya kituo cha usimamizi. */
+export async function countCourierRequests(): Promise<number> {
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("courier_status", "pending");
+
+  return count ?? 0;
+}
+
+/**
+ * Kazi za msabishi aliyeingia. RLS ya `orders` huruhusu msabishi kuona
+ * oda ambazo courier_id yake ni yeye, kwa hivyo swali hili halihitaji
+ * kuruhusa maalum.
+ */
+export async function getCourierOrders(courierId: string): Promise<Order[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("orders")
+    .select(`${ORDER_FIELDS}, buyer:profiles!orders_buyer_id_fkey(id, full_name, phone)`)
+    .eq("courier_id", courierId)
+    .order("courier_assigned_at", { ascending: false })
+    .limit(60);
+
+  if (error) throw error;
+  return (data ?? []) as unknown as Order[];
+}
+
+/**
+ * Majina ya wajumbe kwa oda. Swali hili la pili linakusudia: orodha kuu
+ * za oda hutumia `*`, kwa hivyo kurasa zinaendelea kufanya kazi hata
+ * migration ya usabishi ikiwa bado haijaundwa.
+ */
+export async function getCouriersByIds(ids: string[]): Promise<Map<string, Profile>> {
+  const unique = [...new Set(ids)].filter(Boolean);
+  if (unique.length === 0) return new Map();
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, phone")
+    .in("id", unique);
+
+  if (error) return new Map();
+  return new Map((data ?? []).map((row) => [String(row.id), row as unknown as Profile]));
+}

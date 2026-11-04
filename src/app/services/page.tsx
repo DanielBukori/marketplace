@@ -4,7 +4,17 @@ import { getActiveBusinesses, getActiveListings } from "@/lib/db";
 import { getT } from "@/lib/i18n-server";
 import { isSupabaseConfigured } from "@/lib/media";
 import { serviceCategoryIds } from "@/lib/data";
+import { pageMeta } from "@/lib/seo";
 import type { Business, Listing } from "@/lib/types";
+
+export async function generateMetadata() {
+  const t = await getT();
+  return pageMeta(
+    "/services",
+    t.meta.pages.services.title,
+    t.meta.pages.services.desc,
+  );
+}
 
 export default async function ServicesPage() {
   const t = await getT();

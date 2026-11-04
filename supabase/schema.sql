@@ -1308,3 +1308,443 @@ create policy "ads update admin" on public.ads
 drop policy if exists "ads delete admin" on public.ads;
 create policy "ads delete admin" on public.ads
   for delete using (is_admin_user());
+
+
+-- =====================================================================
+-- 17. Upelekezaji — maeneo ya chuo, wajumbe na mpangilio wa oda
+-- =====================================================================
+-- Kanuni za pesa hapa (zikubaliwa na mmiliki wa mfumo):
+--   * Gharama ya upelekezaji huwekwa na MUZIDI kwa kila biashara
+--     (businesses.delivery_fee, safu iliyopo tayari).
+--   * Msabishi (mtu wa delivery) hulipwa na mmiliki wa duka/mgahawa
+--     NJE YA MFUMO. Kwa hivyo hakuna jedwali la malipo kwa wajumbe hapa
+--     wala kiasi kinachoonekana kwenye skrini yake: mfumo huhifadhi
+--     mpangilio wa kazi tu.
+--   * Mnunuzi huchagua ENEO aliloandaliwa na msimamizi; orodha ya maeneo
+--     ni ya msimamizi pekee, na biashara huamua maeneo ipi inatumikia.
+--
+-- Hakuna data za kujaribu: maeneo ya kwanza huwekwa na msimamizi
+-- kupitia dashibodi, na wajumbe huidhinishwa mmoja mmoja.
+
+-- -- 17.1 Safu za usabishi kwenye profaili --
+alter table public.profiles add column if not exists courier_status text
+  not null default 'none'
+  check (courier_status in ('none', 'pending', 'approved', 'rejected'));
+alter table public.profiles add column if not exists courier_requested_at timestamptz;
+alter table public.profiles add column if not exists courier_approved_by uuid
+  references public.profiles (id) on delete set null;
+alter table public.profiles add column if not exists courier_approved_at timestamptz;
+
+create index if not exists profiles_courier_status_idx
+  on public.profiles (courier_status, created_at desc);
+
+-- Kazi: je, mtumiaji aliyeingia ni msabishi aliyeidhinishwa?
+create or replace function public.is_approved_courier()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid()
+      and p.courier_status = 'approved'
+  );
+$$;
+
+-- Kinga ya safu za madaraka. Kivinjari hakiwezi kujipa `is_admin` wala
+-- kujiidhinisha kuwa msabishi: kinaweza kuweka maombi ('pending') tu.
+create or replace function public.protect_profile_columns()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  actor_role text := coalesce(auth.jwt() ->> 'role', 'anon');
+begin
+  new.updated_at := now();
+
+  if actor_role = 'service_role' or public.is_admin_user() then
+    return new;
+  end if;
+
+  new.id := old.id;
+  new.is_admin := old.is_admin;
+  new.courier_approved_by := old.courier_approved_by;
+  new.courier_approved_at := old.courier_approved_at;
+
+  -- Kuomba na kurudisha maombi tu ndiko kuruhusiwa:
+  -- none/rejected -> pending, na pending -> none.
+  if new.courier_status is distinct from old.courier_status then
+    if old.courier_status in ('none', 'rejected') and new.courier_status = 'pending' then
+      new.courier_requested_at := now();
+    elsif old.courier_status = 'pending' and new.courier_status = 'none' then
+      new.courier_requested_at := null;
+    else
+      new.courier_status := old.courier_status;
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists profiles_protect_columns on public.profiles;
+create trigger profiles_protect_columns
+  before update on public.profiles
+  for each row execute function public.protect_profile_columns();
+
+-- Msimamizi hubadilisha profaili za wengine (uidhinishaji wa wajumbe).
+drop policy if exists "profiles update admin" on public.profiles;
+create policy "profiles update admin" on public.profiles
+  for update using (is_admin_user()) with check (is_admin_user());
+
+-- -- 17.2 Maeneo ya upelekezaji yanayotunzwa na msimamizi --
+create table if not exists public.delivery_zones (
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (char_length(name) between 2 and 60),
+  -- Maelezo mafupi: alama ya kutambua, muda wa kazi, n.k.
+  note text not null default '',
+  sort_order integer not null default 0,
+  is_active boolean not null default true,
+  created_by uuid references public.profiles (id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists delivery_zones_active_idx
+  on public.delivery_zones (is_active, sort_order, name);
+
+drop trigger if exists delivery_zones_updated_at on public.delivery_zones;
+create trigger delivery_zones_updated_at
+  before update on public.delivery_zones
+  for each row execute function public.set_updated_at();
+
+-- Biashara hutumikia maeneo ipi: ikiwa haina mstari hapa, inatumikia yote
+-- (hivyo duka jipya halikatawi oda kabla ya mpangilio wa maeneo kufanywa).
+create table if not exists public.business_zones (
+  business_id uuid not null references public.businesses (id) on delete cascade,
+  zone_id uuid not null references public.delivery_zones (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (business_id, zone_id)
+);
+
+create index if not exists business_zones_zone_idx on public.business_zones (zone_id);
+
+alter table public.delivery_zones enable row level security;
+alter table public.business_zones enable row level security;
+
+drop policy if exists "zones read" on public.delivery_zones;
+create policy "zones read" on public.delivery_zones
+  for select using (is_active or is_admin_user());
+drop policy if exists "zones insert admin" on public.delivery_zones;
+create policy "zones insert admin" on public.delivery_zones
+  for insert to authenticated with check (is_admin_user());
+drop policy if exists "zones update admin" on public.delivery_zones;
+create policy "zones update admin" on public.delivery_zones
+  for update using (is_admin_user()) with check (is_admin_user());
+drop policy if exists "zones delete admin" on public.delivery_zones;
+create policy "zones delete admin" on public.delivery_zones
+  for delete using (is_admin_user());
+
+drop policy if exists "business zones read" on public.business_zones;
+create policy "business zones read" on public.business_zones
+  for select using (true);
+drop policy if exists "business zones insert" on public.business_zones;
+create policy "business zones insert" on public.business_zones
+  for insert to authenticated
+  with check (is_business_owner(business_id) or is_admin_user());
+drop policy if exists "business zones delete" on public.business_zones;
+create policy "business zones delete" on public.business_zones
+  for delete using (is_business_owner(business_id) or is_admin_user());
+
+-- -- 17.3 Oda: eneo lililochaguliwa + msabishi aliyepangwa --
+alter table public.orders add column if not exists delivery_zone_id uuid
+  references public.delivery_zones (id) on delete set null;
+-- Nakala ya jina: oda iliyokamilika hakisika hata kama eneo litabadilishwa.
+alter table public.orders add column if not exists delivery_zone_name text
+  not null default '';
+alter table public.orders add column if not exists courier_id uuid
+  references public.profiles (id) on delete set null;
+alter table public.orders add column if not exists courier_assigned_at timestamptz;
+
+create index if not exists orders_courier_idx
+  on public.orders (courier_id, status, created_at desc);
+create index if not exists orders_zone_idx on public.orders (delivery_zone_id);
+
+-- Hatua mpya: chakula kikiwa njiani kwa msabishi.
+alter table public.orders drop constraint if exists orders_status_check;
+alter table public.orders add constraint orders_status_check
+  check (status in ('pending', 'confirmed', 'preparing', 'ready',
+                    'out_for_delivery', 'completed', 'cancelled'));
+
+-- -- 17.4 Trigger za oda zilizosasishwa --
+
+-- Kwa kuingiza: eneo halisi linapitishwa, jina linahifadhiwa kama nakala,
+-- na msabishi hapangwi na kivinjari kamwe.
+create or replace function public.prepare_new_order()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  biz_kind text;
+  biz_fee numeric;
+  zone_name text;
+  biz_has_zones boolean;
+begin
+  select kind, delivery_fee
+    into biz_kind, biz_fee
+    from public.businesses
+   where id = new.business_id
+     and is_active;
+
+  if biz_kind is null then
+    raise exception 'Biashara haipatikani au imefungwa';
+  end if;
+
+  -- Aina na gharama ya delivery havitoki kwa mteja: muuzi ndiye anayaweka.
+  new.kind := case when biz_kind = 'food' then 'food' else 'goods' end;
+  new.delivery_fee := case
+    when new.delivery_method = 'delivery' then coalesce(biz_fee, 0)
+    else 0
+  end;
+
+  -- Eneo: likitoka nje ya orodha hai ya biashara hukataliwa kimya kimya
+  -- (ODA haikatawi — mnunuzi hurudi kuchagua tena).
+  new.delivery_zone_name := '';
+  if new.delivery_method <> 'delivery' then
+    new.delivery_zone_id := null;
+  elsif new.delivery_zone_id is not null then
+    select z.name
+      into zone_name
+      from public.delivery_zones z
+     where z.id = new.delivery_zone_id
+       and z.is_active;
+
+    select exists (
+      select 1 from public.business_zones bz
+       where bz.business_id = new.business_id
+    ) into biz_has_zones;
+
+    if zone_name is null
+       or (biz_has_zones and not exists (
+            select 1 from public.business_zones bz
+             where bz.business_id = new.business_id
+               and bz.zone_id = new.delivery_zone_id
+           )) then
+      new.delivery_zone_id := null;
+      zone_name := null;
+    end if;
+
+    new.delivery_zone_name := coalesce(zone_name, '');
+  end if;
+
+  -- Msabishi hapangwi na kivinjari: muuzi au msimamizi ndiyo wanaompanga.
+  new.courier_id := null;
+  new.courier_assigned_at := null;
+
+  -- Oda mpya daima huanza ikiwa haijalipwa; jumla huhesabiwa na
+  -- trigger ya vipande, hivyo thamani kutoka kivinjari hapuuziwi.
+  new.payment_status := 'unpaid';
+  new.provider := '';
+  new.provider_payment_id := null;
+  new.payment_channel := '';
+  new.items_total := 0;
+  new.total := 0;
+  new.discount := 0;
+  new.offer_label := '';
+  new.status := 'pending';
+  new.completed_at := null;
+
+  if new.offer_id is not null and not exists (
+    select 1
+      from public.offers f
+     where f.id = new.offer_id
+       and f.business_id = new.business_id
+       and f.is_active
+       and f.starts_at <= now()
+       and (f.ends_at is null or f.ends_at > now())
+  ) then
+    new.offer_id := null;
+  end if;
+
+  new.reference := upper(
+    'IAA-' || to_char(now(), 'yymmdd') || '-' ||
+    substr(translate(new.id::text, '-', ''), 1, 8)
+  );
+  return new;
+end;
+$$;
+
+-- Kwa kubadilisha: muuzi ndiye anayempanga msabishi; msabishi aliye pangwa
+-- huhamisha oda hadi 'out_for_delivery' au 'completed'.
+create or replace function public.protect_order_columns()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  actor_role text := coalesce(auth.jwt() ->> 'role', 'anon');
+  is_owner boolean;
+  is_admin boolean;
+  is_buyer boolean := old.buyer_id = auth.uid();
+  is_courier boolean := old.courier_id = auth.uid()
+                       and public.is_approved_courier();
+  syncing_totals boolean :=
+    coalesce(current_setting('iaa.syncing_order_totals', true), 'false') = 'true';
+begin
+  new.updated_at := now();
+
+  if new.status is distinct from old.status then
+    new.completed_at := case
+      when new.status = 'completed' then now()
+      else null
+    end;
+  else
+    new.completed_at := old.completed_at;
+  end if;
+
+  if actor_role = 'service_role' then
+    return new;
+  end if;
+
+  -- Safu ambazo ni milki ya seva au hifadhidata pekee.
+  new.reference := old.reference;
+  new.kind := old.kind;
+  new.buyer_id := old.buyer_id;
+  new.business_id := old.business_id;
+  new.delivery_fee := old.delivery_fee;
+  new.created_at := old.created_at;
+  new.payment_status := old.payment_status;
+  new.provider := old.provider;
+  new.provider_payment_id := old.provider_payment_id;
+  new.payment_channel := old.payment_channel;
+  new.offer_id := old.offer_id;
+
+  if not syncing_totals then
+    new.items_total := old.items_total;
+    new.total := old.total;
+    new.discount := old.discount;
+    new.offer_label := old.offer_label;
+  end if;
+
+  is_owner := public.is_business_owner(old.business_id);
+  is_admin := public.is_admin_user();
+
+  -- Upelekezaji: muuzi au msimamizi ndiyo wanaompanga msabishi.
+  -- Wengine hawabadilishi eneo wala msabishi baada ya oda kuundwa.
+  if is_owner or is_admin then
+    if new.courier_id is distinct from old.courier_id then
+      if new.courier_id is not null and not exists (
+        select 1 from public.profiles p
+         where p.id = new.courier_id
+           and p.courier_status = 'approved'
+      ) then
+        new.courier_id := old.courier_id;
+      end if;
+      new.courier_assigned_at := case
+        when new.courier_id is null then null
+        else now()
+      end;
+    else
+      new.courier_assigned_at := old.courier_assigned_at;
+    end if;
+  else
+    new.courier_id := old.courier_id;
+    new.courier_assigned_at := old.courier_assigned_at;
+    new.delivery_zone_id := old.delivery_zone_id;
+    new.delivery_zone_name := old.delivery_zone_name;
+  end if;
+
+  if new.status is distinct from old.status then
+    if is_owner or is_admin then
+      null; -- muuzi/msimamizi wanaelekeza hatua ya oda
+    elsif is_courier
+          and old.status in ('ready', 'out_for_delivery')
+          and new.status in ('out_for_delivery', 'completed') then
+      null; -- msabishi anasema ameukuta na ameupeleka
+    elsif is_buyer and old.status = 'pending' and new.status = 'cancelled' then
+      null; -- mnunuzi anaweza kughairi oda ambayo haijachakatwa
+    else
+      new.status := old.status;
+    end if;
+  end if;
+
+  -- Maelezo ya mnunuzi yarekebishwe tu kabla ya oda kuchakatwa.
+  if is_buyer and old.status = 'pending' then
+    null;
+  else
+    new.delivery_method := old.delivery_method;
+    new.contact_phone := old.contact_phone;
+    new.delivery_address := old.delivery_address;
+    new.meetup_point := old.meetup_point;
+    new.note := old.note;
+  end if;
+
+  return new;
+end;
+$$;
+
+-- Historia ya oda hujua nani aliyebadilisha hatua (msabishi, muuzi, msimamizi).
+create or replace function public.log_order_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.status is distinct from old.status
+     or new.payment_status is distinct from old.payment_status then
+    insert into public.order_events (order_id, status, note, actor_id)
+    values (
+      new.id,
+      new.status,
+      case
+        when new.payment_status is distinct from old.payment_status
+        then 'malipo: ' || old.payment_status || ' → ' || new.payment_status
+        else ''
+      end,
+      auth.uid()
+    );
+  end if;
+
+  return null;
+end;
+$$;
+
+-- -- 17.5 RLS ya msabishi: anaona kazi zake tu --
+drop policy if exists "orders read courier" on public.orders;
+create policy "orders read courier" on public.orders
+  for select using (courier_id = auth.uid() and is_approved_courier());
+drop policy if exists "orders update courier" on public.orders;
+create policy "orders update courier" on public.orders
+  for update using (courier_id = auth.uid() and is_approved_courier())
+  with check (courier_id = auth.uid() and is_approved_courier());
+
+drop policy if exists "order items read courier" on public.order_items;
+create policy "order items read courier" on public.order_items
+  for select using (
+    exists (
+      select 1 from public.orders o
+      where o.id = order_id
+        and o.courier_id = auth.uid()
+        and public.is_approved_courier()
+    )
+  );
+
+drop policy if exists "order events read courier" on public.order_events;
+create policy "order events read courier" on public.order_events
+  for select using (
+    exists (
+      select 1 from public.orders o
+      where o.id = order_id
+        and o.courier_id = auth.uid()
+        and public.is_approved_courier()
+    )
+  );
