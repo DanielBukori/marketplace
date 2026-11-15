@@ -8,9 +8,10 @@ import { fill } from "@/lib/i18n";
 import { formatTzs } from "@/lib/data";
 import { mediaUrl } from "@/lib/media";
 import BusinessLogo from "@/components/BusinessLogo";
+import QuickOrderSheet from "@/components/QuickOrderSheet";
 import ReviewList from "@/components/ReviewList";
 import StarRating from "@/components/StarRating";
-import type { Business, Listing, MenuItem, Offer, Review } from "@/lib/types";
+import type { Business, DeliveryZone, Listing, MenuItem, Offer, Review } from "@/lib/types";
 
 export default function Storefront({
   business,
@@ -18,15 +19,24 @@ export default function Storefront({
   listings,
   offers,
   reviews,
+  zones,
+  viewer,
+  signedIn,
+  loginHref,
 }: {
   business: Business;
   menu: MenuItem[];
   listings: Listing[];
   offers: Offer[];
   reviews: Review[];
+  zones: DeliveryZone[] | null;
+  viewer: { phone: string; address: string };
+  signedIn: boolean;
+  loginHref: string;
 }) {
   const { t } = useLanguage();
   const [cart, setCart] = useState<Record<string, number>>({});
+  const [quickItem, setQuickItem] = useState<MenuItem | null>(null);
 
   const lines = useMemo(
     () =>
@@ -198,7 +208,17 @@ export default function Storefront({
                 return (
                   <article
                     key={item.id}
-                    className="flex gap-4 rounded-3xl border border-black/5 bg-white p-4 shadow-sm"
+                    onClick={() => setQuickItem(item)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setQuickItem(item);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={fill(t.storefront.quickTitle, { name: item.name })}
+                    className="flex cursor-pointer gap-4 rounded-3xl border border-black/5 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
                   >
                     <div className="tile relative h-20 w-20 shrink-0 rounded-2xl">
                       {photo && (
@@ -236,7 +256,10 @@ export default function Storefront({
                         {qty === 0 ? (
                           <button
                             type="button"
-                            onClick={() => step(item.id, 1)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              step(item.id, 1);
+                            }}
                             aria-label={fill(t.storefront.addAria, { name: item.name })}
                             className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-700 text-white transition hover:bg-primary-800"
                           >
@@ -246,7 +269,10 @@ export default function Storefront({
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
-                              onClick={() => step(item.id, -1)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                step(item.id, -1);
+                              }}
                               aria-label={t.storefront.decrease}
                               className="flex h-10 w-10 items-center justify-center rounded-full border border-black/5 bg-white text-ink-900 transition hover:bg-paper-100"
                             >
@@ -257,7 +283,10 @@ export default function Storefront({
                             </span>
                             <button
                               type="button"
-                              onClick={() => step(item.id, 1)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                step(item.id, 1);
+                              }}
                               aria-label={t.storefront.increase}
                               className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-700 text-white transition hover:bg-primary-800"
                             >
@@ -367,6 +396,21 @@ export default function Storefront({
             </Link>
           </div>
         </div>
+      )}
+
+      {quickItem && (
+        <QuickOrderSheet
+          item={quickItem}
+          businessId={business.id}
+          businessName={business.name}
+          deliveryFee={business.delivery_fee}
+          pickupPoint={business.location}
+          zones={zones}
+          viewer={viewer}
+          signedIn={signedIn}
+          loginHref={loginHref}
+          onClose={() => setQuickItem(null)}
+        />
       )}
     </div>
   );

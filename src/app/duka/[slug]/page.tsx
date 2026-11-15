@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { getBusinessBySlug } from "@/lib/db";
+import { getBusinessBySlug, getProfile, getZonesForBusiness } from "@/lib/db";
+import { getCurrentUser } from "@/lib/supabase/server";
 import { isSupabaseConfigured, mediaUrl } from "@/lib/media";
 import { getT } from "@/lib/i18n-server";
 import { absoluteUrl, clip, jsonLd, pageMeta } from "@/lib/seo";
@@ -44,6 +45,19 @@ export default async function BusinessPage({
   const b = board.business;
   const logo = mediaUrl(b.logo_path ?? b.cover_path);
 
+  // Oda ya papo hapo: namba na mahali hujazwa kutoka akaunti, ili mtu
+  // abonyeze chakula tu na kuweka oda bila kuandika fomu ndefu.
+  const [zones, user] = await Promise.all([
+    getZonesForBusiness(b.id),
+    getCurrentUser(),
+  ]);
+  const profile = user ? await getProfile(user.id).catch(() => null) : null;
+  const viewer = {
+    phone: profile?.phone ?? String(user?.user_metadata?.phone ?? ""),
+    address: profile?.hall ?? "",
+  };
+  const loginHref = `/login?next=${encodeURIComponent(`/duka/${b.slug}`)}`;
+
   return (
     <>
       {jsonLd({
@@ -73,6 +87,10 @@ export default async function BusinessPage({
         listings={board.listings}
         offers={board.offers}
         reviews={board.reviews}
+        zones={zones}
+        viewer={viewer}
+        signedIn={Boolean(user)}
+        loginHref={loginHref}
       />
     </>
   );
