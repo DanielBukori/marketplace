@@ -87,6 +87,9 @@
 }
 
 @layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
   body {
     @apply bg-paper-50 text-gray-900 antialiased;
   }
@@ -142,4 +145,15 @@
 
 @utility chip-active {
   @apply border-primary-800 bg-primary-800 text-white hover:border-primary-800 hover:text-white;
+}
+
+/* iOS husogeza ukurasa na kukuza kwa mara moja pale sehemu ya kuandika
+   inapokuwa na maandishi madogo kuliko 16px. Programu ya simu haipaswi
+   kufanya hivyo, kwa hivyo sehemu zote za kuandika zinapata 16px. */
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }

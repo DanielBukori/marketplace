@@ -118,10 +118,14 @@ export async function POST(request: NextRequest) {
 
   const paymentStatus = isPaid ? "paid" : isRefunded ? "refunded" : "failed";
 
-  // Oda iliyolipwa haibadilishwi tena — hubaya hutokea Snippe inapounda
-  // ombi mara kwa mara, lakini pesa huhamishwa mara moja tu.
-  if ((isPaid || isRefunded) && order.payment_status === "paid" && paymentStatus !== "failed") {
+  // Oda iliyolipwa haishushwi nyuma: event ya zamani ya "failed/expired"
+  // (mf. jaribio la kwanza lililokataliwa) haibadilishi malipo yaliyofaulu.
+  // Marejesho ndiyo tukio pekee linalobadilisha oda iliyolipwa.
+  if (order.payment_status === "paid" && !isRefunded) {
     return NextResponse.json({ received: true, skipped: "tayari imelipwa" });
+  }
+  if (order.payment_status === "refunded") {
+    return NextResponse.json({ received: true, skipped: "tayari imerejeshwa" });
   }
 
   const { error: updateError } = await admin
@@ -136,6 +140,16 @@ export async function POST(request: NextRequest) {
   if (updateError) {
     console.error("snippe webhook: oda haibadlishwi", updateError.message);
     return NextResponse.json({ message: "Hifadhidata imekataa." }, { status: 500 });
+  }
+
+  // Marejesho hufuta foli ambazo hazijatumwa — isije ikaenda kwa muuzi
+  // baada ya pesa kurejeshwa kwa mnunuzi.
+  if (isRefunded) {
+    await admin
+      .from("payouts")
+      .update({ status: "failed", failure_reason: "oda imerejeshwa" })
+      .eq("order_id", order.id)
+      .in("status", ["queued", "failed"]);
   }
 
   if (isPaid) {

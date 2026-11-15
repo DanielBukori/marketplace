@@ -363,19 +363,19 @@ alter table public.profiles enable row level security;
 alter table public.businesses enable row level security;
 alter table public.listings enable row level security;
 alter table public.menu_items enable row level security;
+alter table public.offers enable row level security;
 alter table public.orders enable row level security;
 alter table public.order_items enable row level security;
 alter table public.order_events enable row level security;
 alter table public.payouts enable row level security;
 
--- Profaili: zinaonekana kwa wote (muuzi anahitaji jina la mnunuzi),
--- lakini mtumiaji anaweza kubadilisha yake pekee.
--- ONYO: `using (true)` huruhusu akaunti yoyote kuona `phone` na `hall` za
--- kila mtu. Kabla ya kutangaza kwa wingi, badilisha hii iwe view ya
--- `full_name + avatar_path` pekee, au ongeza `to authenticated`.
+-- Profaili: akaunti zilizoingia huona majina na namba za wateja/wauzaji
+-- wanaoshirikiana nao (muuzi anahitaji simu ya mnunuzi kwenye oda).
+-- Wasioingia hawasomi orodha hii kabisa — hivyo `phone`/`hall` haziwezi
+-- kuvunwa nje ya akaunti. Mtumiaji hubadilisha profaili yake pekee.
 drop policy if exists "profiles read" on public.profiles;
 create policy "profiles read" on public.profiles
-  for select using (true);
+  for select to authenticated using (true);
 drop policy if exists "profiles update own" on public.profiles;
 create policy "profiles update own" on public.profiles
   for update using (id = auth.uid()) with check (id = auth.uid());
@@ -399,6 +399,42 @@ create policy "businesses update own" on public.businesses
 drop policy if exists "businesses delete own" on public.businesses;
 create policy "businesses delete own" on public.businesses
   for delete using (owner_id = auth.uid());
+
+-- Alama za uaminifu na wastani wa nyota ni za mfumo. Mmiliki hawezi
+-- kujiwekea "verified" wala kujipa nyota; msimamizi (na seva) anaweza.
+-- `is_active` inabaki kwa mmiliki kwa sababu duka jipya huanza likiwa
+-- hai, naye anaweza kulisimamisha muda wowote.
+create or replace function public.protect_business_columns()
+returns trigger
+language plpgsql
+as $$
+declare
+  actor_role text := coalesce(auth.jwt() ->> 'role', 'anon');
+begin
+  if actor_role = 'service_role' or public.is_admin_user() then
+    return new;
+  end if;
+
+  if tg_op = 'INSERT' then
+    new.is_verified := false;
+    new.rating_avg := 0;
+    new.rating_count := 0;
+  else
+    new.is_verified := old.is_verified;
+    new.rating_avg := old.rating_avg;
+    new.rating_count := old.rating_count;
+    new.owner_id := old.owner_id;
+    new.created_at := old.created_at;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists businesses_protect_columns on public.businesses;
+create trigger businesses_protect_columns
+  before insert or update on public.businesses
+  for each row execute function public.protect_business_columns();
 
 -- Matangazo: umma huona 'active' tu; mmiliki huona yake yote.
 drop policy if exists "listings read" on public.listings;
@@ -468,6 +504,10 @@ create policy "order items insert buyer" on public.order_items
       where o.id = order_id
         and o.buyer_id = auth.uid()
         and o.status = 'pending'
+        -- Mara malipo yanapoanzishwa, jumla ndiyo iliyotumwa kwa Snippe;
+        -- kuongeza kipande hapa kungelipwa kwa kiasi kidogo kuliko cha oda.
+        and o.payment_status = 'unpaid'
+        and o.provider_payment_id is null
     )
   );
 
@@ -489,6 +529,33 @@ create policy "payouts read own" on public.payouts
 drop policy if exists "payouts read admin" on public.payouts;
 create policy "payouts read admin" on public.payouts
   for select using (is_admin_user());
+
+-- Ofa: mnunuzi huona zile zinazoendelea tu; mmiliki huona zake zote
+-- (pamoja na zilizosimamishwa) na msimamizi huona zote. Bila policies
+-- hizi, jedwali lilikuwa wazi kwa anon: mtu angeweza kuweka ofa ya 90%
+-- kwenye biashara ya mwingine au kufuta ofa za wengine.
+drop policy if exists "offers read live" on public.offers;
+create policy "offers read live" on public.offers
+  for select using (
+    (
+      is_active
+      and starts_at <= now()
+      and (ends_at is null or ends_at > now())
+    )
+    or is_business_owner(business_id)
+    or is_admin_user()
+  );
+drop policy if exists "offers insert own" on public.offers;
+create policy "offers insert own" on public.offers
+  for insert to authenticated
+  with check (is_business_owner(business_id) or is_admin_user());
+drop policy if exists "offers update own" on public.offers;
+create policy "offers update own" on public.offers
+  for update using (is_business_owner(business_id) or is_admin_user())
+  with check (is_business_owner(business_id) or is_admin_user());
+drop policy if exists "offers delete own" on public.offers;
+create policy "offers delete own" on public.offers
+  for delete using (is_business_owner(business_id) or is_admin_user());
 
 -- Msimamizi huweza kuidhinisha, kuzima au kubadilisha hali ya waliyoweka.
 drop policy if exists "listings update admin" on public.listings;
@@ -995,6 +1062,11 @@ begin
     new.order_id := old.order_id;
     new.business_id := old.business_id;
     new.created_at := old.created_at;
+    -- Kuficha au kufunua ni haki ya msimamizi; mwandishi hawezi kurudisha
+    -- maoni yaliyofichwa bila idhini yake.
+    if not public.is_admin_user() then
+      new.is_hidden := old.is_hidden;
+    end if;
   end if;
 
   if not exists (
@@ -1115,7 +1187,7 @@ drop policy if exists "reviews update author" on public.reviews;
 create policy "reviews update author" on public.reviews
   for update to authenticated
   using (author_id = auth.uid())
-  with check (author_id = auth.uid() and is_hidden = false);
+  with check (author_id = auth.uid());
 drop policy if exists "reviews update admin" on public.reviews;
 create policy "reviews update admin" on public.reviews
   for update using (is_admin_user()) with check (is_admin_user());

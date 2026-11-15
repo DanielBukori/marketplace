@@ -2,16 +2,25 @@
 import { useState, useSyncExternalStore, type FormEvent, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, CheckCircle2, GraduationCap, Mail, Phone, User } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  GraduationCap,
+  LockKeyhole,
+  Mail,
+  Phone,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useLanguage } from "@/context/LanguageContext";
 import { fill } from "@/lib/i18n";
 import { isSupabaseConfigured } from "@/lib/media";
 import SetupNotice from "@/components/SetupNotice";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-
-type Step = "choose" | "email" | "sent";
+type Mode = "signin" | "signup";
+type Step = "form" | "confirm";
 
 /** Kitu kutoka kwa URL bila `useSearchParams`, ambacho kingeomba Suspense. */
 function useQueryParam(name: string) {
@@ -23,6 +32,18 @@ function useQueryParam(name: string) {
     () => new URLSearchParams(window.location.search).get(name),
     () => null,
   );
+}
+
+/**
+ * Namba ya simu huhifadhiwa kama `255…` bila alama, ili SMS na taarifa
+ * za oda zifike kwenye namba ileile bila kujali mtumiaji aliandika vipi.
+ */
+function normalizePhone(raw: string): string | null {
+  const digits = raw.replace(/[^\d]/g, "");
+  let full = digits;
+  if (digits.startsWith("0")) full = `255${digits.slice(1)}`;
+  else if (!digits.startsWith("255") && digits.length === 9) full = `255${digits}`;
+  return /^255[67]\d{8}$/.test(full) ? full : null;
 }
 
 function GoogleMark() {
@@ -95,38 +116,65 @@ function AuthRow({
 
 export default function LoginPage() {
   const { t } = useLanguage();
-  const [step, setStep] = useState<Step>("choose");
-  const [name, setName] = useState("");
+  const [mode, setMode] = useState<Mode>("signin");
+  const [step, setStep] = useState<Step>("form");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [codeBusy, setCodeBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [code, setCode] = useState("");
+  const [resent, setResent] = useState(false);
   const linkError = useQueryParam("error_description");
   const [linkErrorHidden, setLinkErrorHidden] = useState(false);
 
-  // Ruga za ndani tu: `//host` ni protocol-relative, ingekuwa open redirect.
+  // Ruga za ndani tu: `//host` ni protocol-relative na `/\host` pia
+  // hugeuzwa kuwa `//host`; zote ni open redirect.
   function nextPath() {
     const raw = new URLSearchParams(window.location.search).get("next") ?? "/dashboard";
-    return raw.startsWith("/") && !raw.startsWith("//") ? raw : "/dashboard";
+    return raw.startsWith("/") && !raw.startsWith("//") && !raw.includes("\\")
+      ? raw
+      : "/dashboard";
   }
 
   // `next` husomwa browserani ili ukurasa huu usihitaji Suspense ya useSearchParams.
+  // Bila NEXT_PUBLIC_SITE_URL, anwani ya kivinjari ndiyo sahihi zaidi kuliko
+  // localhost — hasa kwenye dev ya simu kupitia 192.168.x.x:3000.
   function redirectTo() {
-    return `${siteUrl}/auth/callback?next=${encodeURIComponent(nextPath())}`;
+    const base = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+    return `${base}/auth/callback?next=${encodeURIComponent(nextPath())}`;
   }
 
   // Supabase hutoa ujumbe wa Kiingereza; hii huongeza hatua halisi ya Kiswahili/EN.
   function hintFor(raw: string) {
     const text = raw.toLowerCase();
+    if (
+      text.includes("failed to fetch") ||
+      text.includes("fetch failed") ||
+      text.includes("load failed") ||
+      text.includes("network")
+    ) {
+      return t.common.problems.offline;
+    }
+    if (text.includes("invalid login credentials")) return t.auth.errInvalidCreds;
+    if (text.includes("already registered") || text.includes("already exists"))
+      return t.auth.errUserExists;
+    if (text.includes("password") && (text.includes("short") || text.includes("least")))
+      return t.auth.errWeakPassword;
     if (text.includes("exchange external code")) return t.auth.errGoogle;
-    if (text.includes("error sending magic link") || text.includes("smtp")) return t.auth.errSmtp;
-    if (text.includes("rate limit")) return t.auth.errRateLimit;
+    if (text.includes("error sending") || text.includes("smtp")) return t.auth.errSmtp;
+    if (text.includes("rate limit") || text.includes("security purposes"))
+      return t.auth.errRateLimit;
     if (text.includes("code verifier") || text.includes("pkce")) return t.auth.errPkce;
     if (text.includes("token")) return t.auth.errToken;
     if (text.includes("redirect")) return t.auth.errRedirect;
     if (text.includes("signup")) return t.auth.errSignupDisabled;
-    if (text.includes("badly formatted") || text.includes("invalid email"))
+    if (
+      (text.includes("email") && text.includes("invalid")) ||
+      text.includes("badly formatted")
+    )
       return t.auth.errBadEmail;
     if (text.includes("not confirmed")) return t.auth.errNotConfirmed;
     return null;
@@ -163,57 +211,32 @@ export default function LoginPage() {
     setBusy(false);
   }
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setBusy(true);
+  function switchMode(next: Mode) {
+    setMode(next);
+    setStep("form");
     setError(null);
-
-    try {
-      const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithOtp({
-        email: email.trim().toLowerCase(),
-        options: {
-          emailRedirectTo: redirectTo(),
-          // Hii inaandika profaili wakati Supabase inapotengeneza mtumiaji
-          // mpya; kwa akaunti zilizopo humezaachwa kama zilivyo.
-          data: { full_name: name.trim(), phone: phone.trim() },
-        },
-      });
-
-      if (signInError) setError(signInError.message);
-      else setStep("sent");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
-    setBusy(false);
-  }
-
-  function openEmailForm() {
-    setError(null);
+    setResent(false);
+    setPassword("");
+    setShowPassword(false);
     setLinkErrorHidden(true);
-    setStep("email");
   }
 
-  // Njia mbadala ya kiungo: namba 6 za OTP zinafanya kazi hata kama barua pepe
-  // imesomwa kwenye simu isiyoona `localhost`.
-  async function handleVerify(e: FormEvent) {
+  async function handleSignIn(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
 
     try {
       const supabase = createClient();
-      const { error: verifyError } = await supabase.auth.verifyOtp({
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
-        token: code.trim(),
-        type: "email",
+        password,
       });
-      if (verifyError) {
-        setError(verifyError.message);
+      if (signInError) {
+        setError(signInError.message);
         setBusy(false);
         return;
       }
-      // Session imehifadhiwa kwenye cookies; pakia upya ili SSR ionekane.
       window.location.assign(nextPath());
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -221,88 +244,205 @@ export default function LoginPage() {
     }
   }
 
+  async function handleSignUp(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    const msisdn = normalizePhone(phone);
+    if (!msisdn) {
+      setError(t.auth.errPhone);
+      return;
+    }
+    if (password.length < 8) {
+      setError(t.auth.errWeakPassword);
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const supabase = createClient();
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: email.trim().toLowerCase(),
+        password,
+        options: {
+          emailRedirectTo: redirectTo(),
+          // Trigger ya `handle_new_user` husoma `phone` hapa na kuiweka
+          // kwenye profiles — ndiyo namba ya taarifa za oda.
+          data: { phone: msisdn },
+        },
+      });
+      if (signUpError) {
+        setError(signUpError.message);
+        setBusy(false);
+        return;
+      }
+      // Supabase huficha kama barua pepe ina akaunti (anti-enumeration) kwa
+      // kurudisha mtumiaji asiye na identity — hakuna barua pepe itakayotumwa.
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        switchMode("signin");
+        setError(t.auth.errUserExists);
+        setBusy(false);
+        return;
+      }
+      // Mradi uliozimwa uthibitisho: akaunti imefunguliwa papo hapo.
+      if (data.session) {
+        window.location.assign(nextPath());
+        return;
+      }
+      setCode("");
+      setStep("confirm");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+    setBusy(false);
+  }
+
+  async function resendConfirmation() {
+    setBusy(true);
+    setError(null);
+    setResent(false);
+    try {
+      const supabase = createClient();
+      const { error: resendError } = await supabase.auth.resend({
+        type: "signup",
+        email: email.trim().toLowerCase(),
+        options: { emailRedirectTo: redirectTo() },
+      });
+      if (resendError) setError(resendError.message);
+      else setResent(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    }
+    setBusy(false);
+  }
+
+  // Njia mbadala ya kiungo: namba ya uthibitisho kutoka barua pepe hufanya
+  // kazi hata kwenye kivinjari kingine (hakuna PKCE code verifier).
+  async function verifySignupCode(e: FormEvent) {
+    e.preventDefault();
+    setCodeBusy(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email: email.trim().toLowerCase(),
+        token: code.trim(),
+        type: "signup",
+      });
+      if (verifyError) {
+        setError(verifyError.message);
+        setCodeBusy(false);
+        return;
+      }
+      window.location.assign(nextPath());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setCodeBusy(false);
+    }
+  }
+
+  const title = mode === "signin" ? t.auth.signInTitle : t.auth.signUpTitle;
+  const description = mode === "signin" ? t.auth.signInDesc : t.auth.signUpDesc;
+
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col px-4 py-10 sm:py-14">
+    <div className="mx-auto flex w-full max-w-md flex-col px-4 py-6 sm:py-14">
       <div className="animate-pop-in overflow-hidden rounded-[28px] border border-black/5 bg-white shadow-[0_22px_60px_-28px_rgba(10,47,80,0.45)]">
-        <div className="border-b border-paper-200 bg-linear-to-b from-primary-50 to-white px-6 pb-6 pt-7 text-center">
+        <div className="border-b border-paper-200 bg-linear-to-b from-primary-50 to-white px-6 pb-5 pt-6 text-center">
           <Image
             src="/iaa/iaa-crest.png"
             width={90}
             height={87}
             alt={t.brand.name}
-            className="mx-auto h-12 w-auto"
+            className="mx-auto h-11 w-auto"
           />
-          <h1 className="mt-4 text-[26px] font-extrabold leading-tight tracking-tight text-ink-900">
+          <h1 className="mt-3 text-[23px] font-extrabold leading-tight tracking-tight text-ink-900">
             {t.auth.dialogTitle}
           </h1>
-          <p className="mx-auto mt-2 max-w-[19rem] text-sm leading-relaxed text-gray-500">
+          <p className="mx-auto mt-1.5 max-w-[20rem] text-[13px] leading-relaxed text-gray-500">
             {t.auth.dialogSubtitle}
           </p>
         </div>
 
-        <div className="px-6 py-6">
+        <div className="px-5 py-5 sm:px-6">
           {!isSupabaseConfigured ? (
             <SetupNotice />
-          ) : step === "sent" ? (
+          ) : step === "confirm" ? (
             <div className="space-y-5">
               <div className="text-center">
                 <CheckCircle2 className="mx-auto text-primary-600" size={38} />
                 <p className="mt-4 font-display text-lg font-bold text-ink-900">
-                  {t.auth.sentTitle}
+                  {t.auth.confirmTitle}
                 </p>
                 <p className="mt-2 text-sm leading-relaxed text-gray-500">
-                  {fill(t.auth.sentBody, { email })}
+                  {fill(t.auth.confirmBody, { email })}
                 </p>
               </div>
 
-              <form onSubmit={handleVerify} className="space-y-3">
+              {error && errorNote(error)}
+              {resent && (
+                <p className="rounded-xl bg-primary-50 px-4 py-3 text-center text-sm font-semibold text-primary-800">
+                  {t.auth.resent}
+                </p>
+              )}
+
+              <form onSubmit={verifySignupCode} className="space-y-3">
                 <div>
                   <label
                     className="block text-sm font-semibold text-ink-900"
-                    htmlFor="code"
+                    htmlFor="confirm-code"
                   >
-                    {t.auth.codeLabel}
+                    {t.auth.confirmCodeLabel}
                   </label>
                   <p className="mt-1 text-xs leading-relaxed text-gray-500">
-                    {t.auth.codeIntro}
+                    {t.auth.confirmCodeHint}
                   </p>
                 </div>
                 <input
-                  id="code"
+                  id="confirm-code"
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   maxLength={8}
-                  placeholder={t.auth.codePlaceholder}
-                  className="field text-center font-display text-xl font-bold tracking-[0.45em]"
+                  placeholder="123456"
+                  className="field text-center font-display text-xl font-bold tracking-[0.35em]"
                 />
-
-                {error && errorNote(error)}
-
                 <button
                   type="submit"
-                  disabled={busy || code.length < 6}
-                  className="w-full rounded-2xl bg-primary-600 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-700 disabled:opacity-50"
+                  disabled={codeBusy || code.length < 6}
+                  className="w-full rounded-2xl bg-primary-600 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-primary-700 disabled:opacity-50"
                 >
-                  {busy ? t.auth.codeVerifying : t.auth.codeVerify}
+                  {codeBusy ? t.auth.confirmCodeBusy : t.auth.confirmCodeCta}
                 </button>
               </form>
 
+              <div className="flex items-center gap-3 py-0.5">
+                <span className="h-px flex-1 bg-paper-200" />
+                <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-600">
+                  {t.auth.or}
+                </span>
+                <span className="h-px flex-1 bg-paper-200" />
+              </div>
+
               <button
                 type="button"
-                onClick={() => {
-                  setError(null);
-                  setCode("");
-                  setStep("choose");
-                }}
+                onClick={resendConfirmation}
+                disabled={busy || codeBusy}
+                className="w-full rounded-2xl border border-primary-200 bg-white py-3 text-sm font-bold text-primary-800 transition hover:bg-primary-50 disabled:opacity-50"
+              >
+                {busy ? t.auth.resending : t.auth.resend}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => switchMode("signin")}
                 className="block w-full text-center text-sm font-semibold text-primary-700 hover:underline"
               >
-                {t.auth.sentOther}
+                {t.auth.backToOptions}
               </button>
             </div>
-          ) : step === "choose" ? (
-            <div className="space-y-3">
+          ) : (
+            <div className="space-y-4">
               {linkError && !linkErrorHidden && (
                 <div className="rounded-2xl border border-accent-100 bg-accent-100/60 px-4 py-3">
                   <p className="text-sm font-bold text-accent-600">
@@ -323,12 +463,12 @@ export default function LoginPage() {
 
               <AuthRow
                 icon={<GoogleMark />}
-                label={busy ? t.auth.sending : t.auth.google}
+                label={busy ? t.auth.signInBusy : t.auth.google}
                 onClick={continueWithGoogle}
                 disabled={busy}
               />
 
-              <div className="flex items-center gap-3 py-1">
+              <div className="flex items-center gap-3 py-0.5">
                 <span className="h-px flex-1 bg-paper-200" />
                 <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-600">
                   {t.auth.or}
@@ -336,12 +476,182 @@ export default function LoginPage() {
                 <span className="h-px flex-1 bg-paper-200" />
               </div>
 
-              <AuthRow
-                icon={<Mail size={17} />}
-                label={t.auth.emailRow}
-                caption={t.auth.createDesc}
-                onClick={openEmailForm}
-              />
+              <div
+                role="tablist"
+                aria-label={t.auth.dialogTitle}
+                className="grid grid-cols-2 rounded-2xl bg-paper-100 p-1"
+              >
+                {(["signin", "signup"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    role="tab"
+                    aria-selected={mode === tab}
+                    onClick={() => switchMode(tab)}
+                    className={`rounded-xl py-2.5 text-sm font-bold transition ${
+                      mode === tab
+                        ? "bg-white text-primary-800 shadow-sm"
+                        : "text-gray-500 hover:text-primary-700"
+                    }`}
+                  >
+                    {tab === "signin" ? t.auth.signInTab : t.auth.signUpTab}
+                  </button>
+                ))}
+              </div>
+
+              <form
+                onSubmit={mode === "signin" ? handleSignIn : handleSignUp}
+                className="space-y-3.5"
+              >
+                <div>
+                  <h2 className="font-display text-lg font-bold text-ink-900">{title}</h2>
+                  <p className="mt-0.5 text-[13px] leading-relaxed text-gray-500">
+                    {description}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-ink-900" htmlFor="email">
+                    {t.auth.email}
+                  </label>
+                  <div className="relative">
+                    <Mail
+                      aria-hidden
+                      size={18}
+                      className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"
+                    />
+                    <input
+                      id="email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder={t.auth.emailPlaceholder}
+                      className="field pl-11"
+                    />
+                  </div>
+                </div>
+
+                {mode === "signup" && (
+                  <div>
+                    <label
+                      className="mb-1.5 block text-sm font-semibold text-ink-900"
+                      htmlFor="phone"
+                    >
+                      {t.auth.phone}
+                    </label>
+                    <div className="relative">
+                      <Phone
+                        aria-hidden
+                        size={18}
+                        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"
+                      />
+                      <input
+                        id="phone"
+                        type="tel"
+                        required
+                        inputMode="tel"
+                        autoComplete="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder={t.auth.phonePlaceholder}
+                        aria-describedby="phone-hint"
+                        className="field pl-11"
+                      />
+                    </div>
+                    <p id="phone-hint" className="mt-1 text-xs leading-relaxed text-gray-500">
+                      {t.auth.phoneHint}
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <label
+                    className="mb-1.5 block text-sm font-semibold text-ink-900"
+                    htmlFor="password"
+                  >
+                    {t.auth.password}
+                  </label>
+                  <div className="relative">
+                    <LockKeyhole
+                      aria-hidden
+                      size={18}
+                      className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"
+                    />
+                    <input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      required
+                      minLength={8}
+                      autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder={t.auth.passwordPlaceholder}
+                      aria-describedby={mode === "signup" ? "password-hint" : undefined}
+                      className="field pl-11 pr-12"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((value) => !value)}
+                      aria-label={showPassword ? t.auth.hidePassword : t.auth.showPassword}
+                      className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl text-gray-500 transition hover:bg-paper-100 hover:text-primary-700"
+                    >
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
+                  </div>
+                  {mode === "signup" && (
+                    <p id="password-hint" className="mt-1 text-xs leading-relaxed text-gray-500">
+                      {t.auth.passwordHint}
+                    </p>
+                  )}
+                </div>
+
+                {mode === "signin" && (
+                  <div className="text-right">
+                    <Link
+                      href="/reset-password"
+                      className="text-sm font-semibold text-primary-700 underline-offset-4 hover:underline"
+                    >
+                      {t.auth.forgot}
+                    </Link>
+                  </div>
+                )}
+
+                {error && errorNote(error)}
+
+                <button
+                  type="submit"
+                  disabled={
+                    busy ||
+                    email.trim().length === 0 ||
+                    password.length === 0 ||
+                    (mode === "signup" && phone.trim().length === 0)
+                  }
+                  className="w-full rounded-2xl bg-primary-600 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-700 disabled:opacity-50"
+                >
+                  {busy
+                    ? mode === "signin"
+                      ? t.auth.signInBusy
+                      : t.auth.signUpBusy
+                    : mode === "signin"
+                      ? t.auth.signInCta
+                      : t.auth.signUpCta}
+                </button>
+              </form>
+
+              <div className="flex items-center justify-center gap-1.5 text-sm">
+                <span className="text-gray-500">
+                  {mode === "signin" ? t.auth.needAccount : t.auth.haveAccount}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => switchMode(mode === "signin" ? "signup" : "signin")}
+                  className="font-bold text-primary-700 underline-offset-4 hover:underline"
+                >
+                  {mode === "signin" ? t.auth.signUpTab : t.auth.signInTab}
+                </button>
+              </div>
 
               <AuthRow
                 icon={<GraduationCap size={17} />}
@@ -350,110 +660,7 @@ export default function LoginPage() {
                 badge={t.auth.comingSoon}
                 disabled
               />
-
-              {error && errorNote(error)}
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <h2 className="font-display text-lg font-bold text-ink-900">
-                  {t.auth.createTitle}
-                </h2>
-                <p className="mt-1 text-sm leading-relaxed text-gray-500">
-                  {t.auth.createDesc}
-                </p>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-ink-900" htmlFor="name">
-                  {t.auth.fullName}{" "}
-                  <span className="font-normal text-gray-600">({t.common.optional})</span>
-                </label>
-                <div className="relative">
-                  <User
-                    aria-hidden
-                    size={18}
-                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"
-                  />
-                  <input
-                    id="name"
-                    name="name"
-                    autoComplete="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder={t.auth.fullNamePlaceholder}
-                    className="field pl-11"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-ink-900" htmlFor="email">
-                  {t.auth.email}
-                </label>
-                <div className="relative">
-                  <Mail
-                    aria-hidden
-                    size={18}
-                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"
-                  />
-                  <input
-                    id="email"
-                    type="email"
-                    required
-                    autoComplete="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder={t.auth.emailPlaceholder}
-                    className="field pl-11"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-ink-900" htmlFor="phone">
-                  {t.auth.phone}{" "}
-                  <span className="font-normal text-gray-600">({t.common.optional})</span>
-                </label>
-                <div className="relative">
-                  <Phone
-                    aria-hidden
-                    size={18}
-                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"
-                  />
-                  <input
-                    id="phone"
-                    type="tel"
-                    autoComplete="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder={t.auth.phonePlaceholder}
-                    className="field pl-11"
-                  />
-                </div>
-              </div>
-
-              {error && errorNote(error)}
-
-              <button
-                type="submit"
-                disabled={busy || email.trim().length === 0}
-                className="w-full rounded-2xl bg-primary-600 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-700 disabled:opacity-50"
-              >
-                {busy ? t.auth.sending : t.auth.sendLink}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setError(null);
-                  setStep("choose");
-                }}
-                className="flex w-full items-center justify-center gap-2 py-1 text-sm font-semibold text-gray-500 transition hover:text-primary-700"
-              >
-                <ArrowLeft size={15} /> {t.auth.backToOptions}
-              </button>
-            </form>
           )}
         </div>
 
@@ -464,7 +671,7 @@ export default function LoginPage() {
         )}
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+      <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
         <Link
           href="/"
           className="inline-flex items-center justify-center gap-2 text-sm font-medium text-gray-500 hover:text-primary-700"

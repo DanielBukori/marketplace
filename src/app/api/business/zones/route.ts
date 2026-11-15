@@ -56,22 +56,36 @@ export async function POST(request: NextRequest) {
   const rawIds = Array.isArray(body.zoneIds) ? body.zoneIds : [];
   const zoneIds = [...new Set(rawIds.map((id) => String(id)))].filter((id) => UUID.test(id));
 
-  const { error: clearError } = await supabase
-    .from("business_zones")
-    .delete()
-    .eq("business_id", businessId);
-
-  if (clearError) {
-    return NextResponse.json({ message: userError(t, clearError) }, { status: 400 });
-  }
-
+  // Ongeza mpya kwanza, kisha ondoa zile zisizochaguliwa. Kama eneo moja
+  // halipo tena, ombi hushindwa kabla ya kufuta orodha ya zamani — muuzi
+  // haachiwi bila maeneo kwa sababu ya kosa la muda.
   if (zoneIds.length > 0) {
-    const { error: insertError } = await supabase.from("business_zones").insert(
+    const { error: insertError } = await supabase.from("business_zones").upsert(
       zoneIds.map((zone_id) => ({ business_id: businessId, zone_id })),
+      { onConflict: "business_id,zone_id", ignoreDuplicates: true },
     );
 
     if (insertError) {
       return NextResponse.json({ message: userError(t, insertError) }, { status: 400 });
+    }
+
+    const { error: pruneError } = await supabase
+      .from("business_zones")
+      .delete()
+      .eq("business_id", businessId)
+      .not("zone_id", "in", `(${zoneIds.join(",")})`);
+
+    if (pruneError) {
+      return NextResponse.json({ message: userError(t, pruneError) }, { status: 400 });
+    }
+  } else {
+    const { error: clearError } = await supabase
+      .from("business_zones")
+      .delete()
+      .eq("business_id", businessId);
+
+    if (clearError) {
+      return NextResponse.json({ message: userError(t, clearError) }, { status: 400 });
     }
   }
 

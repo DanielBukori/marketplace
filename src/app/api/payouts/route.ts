@@ -123,7 +123,22 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  await admin.from("payouts").update({ status: "processing" }).eq("id", payout.id);
+  // Kuchukua foli kwa masharti: msimamizi akibofya mara mbili (au akaanza
+  // kwenye tab mbili), ombi la pili halipati mstari na halitumi pesa tena.
+  const { data: claimed, error: claimError } = await admin
+    .from("payouts")
+    .update({ status: "processing" })
+    .eq("id", payout.id)
+    .in("status", ["queued", "failed"])
+    .select("id")
+    .maybeSingle();
+
+  if (claimError) {
+    return NextResponse.json({ message: userError(t, claimError) }, { status: 400 });
+  }
+  if (!claimed) {
+    return NextResponse.json({ message: t.api.payoutAlreadySent });
+  }
 
   const result = await createDisbursement({
     amount: Number(payout.amount),

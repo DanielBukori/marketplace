@@ -58,7 +58,12 @@ Ndani ya Supabase → **Authentication → URL Configuration**:
 - **Additional Redirect URLs** = ongeza `http://localhost:3000/auth/callback`, na
   `https://ANWANI_YAKO/auth/callback` utakapochapisha.
 
-Bila ruhusa hiyo, magic link utatoa kosa la "redirect URL is not allowed".
+Bila ruhusa hiyo, kiungo cha kuthibitisha barua pepe au cha kurejesha nenosiri
+hutatoa kosa la "redirect URL is not allowed".
+
+Ndani ya Supabase → **Authentication → Sign In / Providers → Email** hakikisha
+**Enable Email provider** imewaka na **Confirm email** imewashwa (ndiyo mpangilio
+salama). Ukiiacha imezimwa, mtumiaji huingia papema baada ya kujisajili.
 
 ### c) Washe tovuti
 
@@ -71,8 +76,8 @@ Ukibadilisha `.env.local`, simamisha (`Ctrl+C`) kisha uwashe upya `npm run dev`.
 
 ### d) Kuwa msimamizi
 
-Jiandikishe kwenye `/login` kwa barua pepe yako kwanza — bila hapo profaili yako haipo
-bado. Kisha endesha hii katika **SQL Editor**:
+Jiandikishe kwenye `/login` kwa barua pepe, nenosiri na namba ya simu kwanza — bila hapo
+profaili yako haipo bado. Kisha endesha hii katika **SQL Editor**:
 
 ```sql
 update public.profiles p
@@ -91,7 +96,9 @@ created_at, updated_at` tu.
 
 Profaili huundwa yenyewe na trigger `on_auth_user_created` (`handle_new_user()`) mtu
 akapita kwenye `auth.users`; kwa hivyo ikiwa `update` inarudisha `0 rows`, maana yake
-huyo mtu bado hajawahi kuingia — aache kufungua `/login` na kutuma kiungo kwanza.
+huyo mtu bado hajajisajili kamili au hajathibitisha barua pepe — aache kukamilisha
+`/login` kwanza. Trigger hiyo hiyo huhifadhi namba ya simu aliyoiweka wakati wa
+kujisajili (`raw_user_meta_data ->> 'phone'`) ndani ya `profiles.phone`.
 
 Thibitisha:
 
@@ -105,14 +112,21 @@ select u.email, p.full_name, p.is_admin
 Msimamizi huweza kupitisha biashara (`/dashboard/review`), kuandika habari za `/news`
 na kutuma malipo kwa wauzaji (`/dashboard/payouts`).
 
-### e) Njia za kuingia: Google na Kitambulisho cha Chuo
+### e) Njia za kuingia: barua pepe + nenosiri, Google, na Kitambulisho cha Chuo
 
-Kadi ya `/login` ina mistari mitatu:
+Kadi ya `/login` ina tabo mbili — **Ingia** na **Jisajili** — chini ya kitufe cha Google.
 
-- **Ingia au jisajili kwa barua pepe** — hii ndiyo njia inayofanya kazi sasa. Kiungo
-  kimoja cha magic link hufanya kazi kama kuingia *na* kujisajili: ikiwa barua pepe
-  haipo kwenye `auth.users`, Supabase haitengeneza (na trigger huunda `profiles`),
-  ikiwa ipo, unaingia tu.
+- **Ingia** — barua pepe na nenosiri pekee (`signInWithPassword`). Anayesahau nenosiri
+  anabofya **Umesahau nenosiri?** na kwenda `/reset-password`.
+- **Jisajili** — vyuo vitatu tu: **barua pepe, namba ya simu na nenosiri**. Namba ya
+  simu ni ya lazima kwa sababu ndiyo anwani ya taarifa za oda na malipo; inahifadhiwa
+  kama `2556xxxxxxxx` kupitia metadata ya `signUp` na trigger `handle_new_user` huiweka
+  kwenye `profiles.phone`. Hakuna jina linaloombwa — mtumiaji anaweza kuliongeza baadaye
+  kwenye dashibodi.
+- **Uthibitisho wa barua pepe** — `signUp` hutuma kiungo cha *Confirm signup*. Kama
+  `Confirm email` imewashwa, mtumiaji huona hatua ya "Angalia barua pepe yako" na kitufe
+  cha kutuma tena; akibofya kiungo, `/auth/callback` hubadilisha code kuwa session na
+  kumpeleka `next` (kwa default `/dashboard`).
 - **Endelea na Google** — kitufe halisi (`signInWithOAuth`) lakini kinafanya kazi tu
   ukiiwasha:
   1. Google Cloud Console → **OAuth consent screen** (External) → tengeneza **OAuth client
@@ -129,9 +143,14 @@ Kadi ya `/login` ina mistari mitatu:
   kuunganisha naye. Kitufe kimezimikwa makusudi ili kisiwahasishe watumiaji; kitawashwa
   chuo kitakapotoa mfumo huo.
 
-Ukibofya kiungo cha zamani au kilichotumika tayari, `/auth/callback` hurudisha sababu
-(mf. `Email link is invalid or has expired`) kwenye `/login` kama panel nyekundu, na
-`?next=` hubaki pale, hivyo unarudi mahali ulipotaka kwenda baada ya kutuma kiungo kipya.
+**Kurejesha nenosiri:** `/reset-password` huanza kwa kuomba barua pepe
+(`resetPasswordForEmail`); kiungo hurudi `/auth/callback?next=/reset-password`, ambako
+ukurasa huo hutambua session na kuonyesha fomu ya nenosiri jipya (`updateUser`). Bila
+session, huonyesha fomu ya kuomba kiungo.
+
+Kiungo cha zamani au kilichotumika tayari hurudisha sababu (mf. `Email link is invalid
+or has expired`) kwenye `/login` kama panel nyekundu, na `?next=` hubaki pale, hivyo
+unarudi mahali ulipotaka kwenda.
 
 ### f) Weka SMTP (ili barua pepe za kuingia zifike)
 
@@ -167,13 +186,14 @@ dashboard pekee (si katika `schema.sql` wala `.env.local`).
 
 | Kazi | Fungo | Wapi |
 | --- | --- | --- |
-| Barua pepe za **kuingia** (OTP `{{ .Token }}` na magic link) | **SMTP Key** (`xkeysib-…`) + Login | Supabase dashboard → Authentication → SMTP Settings (hatua 4) |
+| Barua pepe za **uthibitisho wa akaunti na kurejesha nenosiri** (template za Supabase) | **SMTP Key** (`xkeysib-…`) + Login | Supabase dashboard → Authentication → SMTP Settings (hatua 4) |
 | Barua pepe za **oda** (`src/lib/brevo.ts`) | **Email API key** (Transactional) | `.env.local` → `BREVO_API_KEY`, `NOTIFY_EMAIL_FROM` |
 
-Kwa hivyo OTP/link **hayatoki** kwenye code yetu — yanatoka Supabase ikipitia Brevo;
-na ujumbe wa oda hutumwa na programu kupitia API. Akaunti moja ya Brevo inatosha
-zote mbili, lakini lazima uweke funguo zote mbili mahali pake. Ona pia "Ujumbe wa oda"
-katika sehemu 2 na hatua (h) chini ya hii kwa template ya magic link.
+Kwa hivyo barua pepe za uthibitisho **hazitoki** kwenye code yetu — zinatoka Supabase
+ikipitia Brevo; na ujumbe wa oda hutumwa na programu kupitia API. Akaunti moja ya Brevo
+inatosha zote mbili, lakini lazima uweke funguo zote mbili mahali pake. Ona pia "Ujumbe
+wa oda" katika sehemu 2 na hatua (h) chini ya hii kwa template za uthibitisho na
+kurejesha nenosiri.
 
 Chaguo lingine: Resend (`smtp.resend.com`, port `465`, username `resend`, password `re_…`),
 Mailgun, SendGrid, AWS SES — host/port/username/password pekee ndiyo zinazohitajika.
@@ -218,69 +238,80 @@ Programu yetu haitumi barua pepe yake — inamwambia Supabase atume. Vigezo amba
 `.env.local` (orodha kamili: `grep -r "process.env" src`) ni:
 
 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`,
-`NEXT_PUBLIC_SITE_URL`, `SNIPPE_API_KEY`, `SNIPPE_WEBHOOK_SECRET`, `SNIPPE_PAYOUT_PHONE`,
+`NEXT_PUBLIC_SITE_URL`, `SNIPPE_API_KEY`, `SNIPPE_WEBHOOK_SECRET`, `BREVO_API_KEY`,
+`NOTIFY_EMAIL_FROM`, `NOTIFY_EMAIL_NAME`, `NEXTSMS_API_TOKEN`, `NEXTSMS_SENDER_ID`,
 `IAA_DEV_ORIGINS`.
 
-Hakuna `EMAIL_PROVIDER`, `BREVO_API_KEY` wala `DEFAULT_FROM_EMAIL` katika code — ukiweka
-kwenye `.env.local` hakuna kitu kinachoisoma, na Supabase haiangalii faili hiyo kamwe.
+Majina ya zamani kama `EMAIL_PROVIDER`, `DEFAULT_FROM_EMAIL` na `SNIPPE_PAYOUT_PHONE` hayasomwi
+na code — ukiyaweka kwenye `.env.local` hakuna kitu kinachoyatumia. Supabase haiangalii faili
+hiyo kamwe.
 Maamuzi ya mailer (host/port/login/password) na maandishi ya barua pepe (template) viko
 **dashboard ya Supabase** pekee, sehemu (f) na (h).
 
 **Na API ya Brevo haitusaidii hapa.** `POST /v3/emailCampaigns` hutuma *kampeni za masoko*
 kwenye orodha za wawasiliano (`recipients.listIds`) kwa ratiba (`scheduledAt`); barua pepe
-za kuingia ni za **mtu mmoja, kwa wakati mmoja, ikiwa na OTP mpya**, kwa hivyo zinaenda
-njia ya `POST /v3/smtp/email` — na ile hutumiwa na Supabase, ambayo huongea na Brevo kupitia
+za uthibitisho ni za **mtu mmoja, kwa wakati mmoja**, kwa hivyo zinaenda njia ya
+`POST /v3/smtp/email` — na ile hutumiwa na Supabase, ambayo huongea na Brevo kupitia
 **SMTP** (host/port/username/password), si kupitia funguo la API. Kwa hivyo funguo la API ya
 Brevo halina mahali pa kuenda katika mfumo huu isipokuwa tutakapotuma barua pepe zetu
 mwenyewe (mf. risiti za oda).
 
-### h) Kuingia kwa namba ya OTP — kwa wanaosoma barua pepe kwenye simu
+### h) Template za barua pepe: uthibitisho na kurejesha nenosiri
 
-Kiungo cha magic link hufanya kazi tu kwenye browser ileile iliyoomba (cookies za PKCE) —
-kwa mtu anayefungua barua pepe kwenye simu, `localhost` haionekani. Kwa hivyo `/login`
-ina pia kisanduku cha **namba ya OTP**: Supabase hutuma namba 6 au 8 (kulingana na mradi), mtumiaji haiandika kwenye
-kompyuta, na `verifyOtp({ email, token, type: "email" })` hufungua session moja kwa moja
-(bila kubofya kiungo).
+Mfumo hutuma barua pepe mbili tu za Supabase:
 
-Ili namba hiyo ionekana kwenye barua pepe, badilisha template:
-**Supabase → Authentication → Email Templates → Magic Link** — weka `{{ .Token }}` ndani ya
-body. Acha `{{ .ConfirmationURL }}` pia, kwa hivyo njia zote mbili (kiungo na namba)
-hufanya kazi. Kiolegezeli tayari kutumika (rangi za IAA):
+- **Confirm signup** — baada ya mtu kujisajili (`signUp`). Kiungo hiki humfikisha
+  `/auth/callback`, ambako code hubadilishwa kuwa session. Kitufe cha **Tuma tena**
+  kwenye `/login` hutumia `resend({ type: "signup" })`.
+- **Reset password** — baada ya kuomba kwenye `/reset-password`
+  (`resetPasswordForEmail`). Kiungo hurudi `/reset-password` baada ya `/auth/callback`.
+
+**Supabase → Authentication → Email Templates** — weka `{{ .ConfirmationURL }}` **na**
+`{{ .Token }}` kwenye template ya *Confirm signup*. Kiungo hufanya kazi kwenye kivinjari
+kilekile; namba huiwezesha mtu aliyeona barua pepe kwenye simu kuthibitisha bila kubofya
+kiungo. Kiolegezeli cha Kiswahili (rangi za IAA):
 
 ```text
-Subject (SW): Ingia IAA Marketplace — namba yako ya OTP
-Subject (EN): Sign in to IAA Marketplace — your OTP code
+Subject (SW): Thibitisha akaunti yako — IAA Marketplace
+Subject (EN): Confirm your account — IAA Marketplace
 ```
 
 ```html
 <h1>IAA Marketplace</h1>
-<p>Namba yako ya kuingia ni:</p>
-<p style="font-size:32px;font-weight:800;letter-spacing:8px;color:#10497e;margin:16px 0">
-  {{ .Token }}
-</p>
-<p>Iandike kwenye ukurasa wa kuingia. Namba hutumika mara moja tu na huisha baada ya muda mfupi.</p>
-<p>Au bofya kitufe hiki kwenye kompyuta ileile uliyotumia ombi:</p>
+<p>Karibu! Bofya kitufe hiki kuthibitisha barua pepe yako na kuanza kutumia soko.</p>
 <p style="margin:24px 0">
   <a href="{{ .ConfirmationURL }}"
      style="background:#10497e;color:#ffffff;padding:12px 22px;border-radius:10px;text-decoration:none">
-    Ingia sasa
+    Thibitisha akaunti
   </a>
 </p>
-<p>Ikiwa hujaomba barua pepe hii, puuza tu.</p>
+<p>Au andika namba hii kwenye ukurasa wa uthibitisho:</p>
+<p style="font-size:30px;font-weight:800;letter-spacing:8px;color:#10497e">{{ .Token }}</p>
+<p>Ikiwa hukujisajili, puuza barua pepe hii.</p>
 ```
+
+Kwa **Reset password**, tumia muundo uleule lakini maandishi "Weka nenosiri jipya" na
+kiungo cha `{{ .ConfirmationURL }}`.
+
+> **Muhimu:** kama barua pepe haifiki kabisa, tatizo si template — ni SMTP. Bila SMTP
+> ya Brevo (hatua (f)), mailer ya default ya Supabase hutuma mara chache tu na mara nyingi
+> huishia Spam. Ukirudia kujisajili kwa barua pepe ambayo **ina akaunti tayari**, Supabase
+> huonyesha tu "imetumwa" bila kutuma chochote (kinga ya kutambua akaunti); fomu sasa
+> inakugundua na kukuelekeza kwenye **Ingia** / **Umesahau nenosiri?**.
 
 **Usalama:** funguo la SMTP huishi **ndani ya Supabase pekee**. Lisiweke kwenye
 `.env.local`, kwenye code, wala kwenye kivinjari — hakuna nambari ya programu yetu
 inayohitaji. (Tofauti na `SNIPPE_API_KEY`, ambayo iko `.env.local` kwa sababu seva yetu
 ndiyo inaiita Snippe.)
 
-**Jaribio:** fungua `/login` → *Ingia au jisajili kwa barua pepe* → tuma → kisha **au**
-ubofye kiungo kwenye browser ileile, **au** uandike namba ulizopata kwenye barua pepe.
-Kwa njia ya namba unapaswa kuondoka `/login` ukafika `next` yako (mf. `/post`). Kosa
-lolote linalojulikana — kikomo cha barua pepe, redirect isiyoruhusiwa, browser tofauti
-(PKCE), namba isiyo sahihi/iliyoyisha muda, usajili uliozimwa — hupatikana kwa Kiswahili/EN
-kwenye kadi, pamoja na ujumbe halisi wa Supabase chini yake; tengenezo liko katika
-`hintFor()` ya `src/app/login/page.tsx`.
+**Jaribio:** fungua `/login` → tabo **Jisajili** → barua pepe, namba ya simu na nenosiri
+→ *Fungua akaunti*. Kama uthibitisho umewashwa, utaona hatua ya "Angalia barua pepe
+yako"; bofya kiungo kwenye barua pepe na ufike `/dashboard`. Kisha toka, ingia tena kwa
+tabo **Ingia**, na ujaribu **Umesahau nenosiri?** → barua pepe → kiungo → nenosiri jipya.
+Kosa lolote linalojulikana — kikomo cha barua pepe, redirect isiyoruhusiwa, nenosiri
+fupi, akaunti iliyopo, namba isiyo sahihi, usajili uliozimwa — hupatikana kwa
+Kiswahili/EN kwenye kadi, pamoja na ujumbe halisi wa Supabase chini yake; tengenezo liko
+katika `hintFor()` ya `src/app/login/page.tsx`.
 
 ---
 
@@ -377,7 +408,9 @@ Usalama na uhalisia:
 
 1. `/login` → `/dashboard` → **Fungua biashara mpya** (`/dashboard/business/new`):
    jina, aina (chakula / bidhaa / huduma), `slug`, simu na gharama ya delivery.
-   Biashara mpya huwa `is_active = false`, kwa hivyo haionekani kwa umma.
+   Biashara mpya huanza ikiwa hai (`is_active = true`), kwa hivyo muuzi huanza
+   mara moja; alama ya `is_verified` huongezwa na msimamizi baada ya kuona
+   nyaraka, naye anaweza kusimamisha biashara yoyote.
 2. Msimamizi (`/dashboard/review`) hupitisha biashara na kuweka alama ya **Verified**
    baada ya kuona nyaraka za muuzi.
 3. Muuzi huongeza vitu: **Menyu** (`/dashboard/menu`) kwa migahawa, au
@@ -419,8 +452,9 @@ hukamilishwa mikononi (cash) — mfumo haudhani pesa imetolewa.
 
 Kuiwasha:
 
-1. Jaza `SNIPPE_API_KEY`, `SNIPPE_WEBHOOK_SECRET` na `SNIPPE_PAYOUT_PHONE` kwenye
-   `.env.local`.
+1. Jaza `SNIPPE_API_KEY` na `SNIPPE_WEBHOOK_SECRET` kwenye `.env.local`. Pesa ya muuzi
+   hutumwa kwenye namba aliyoweka kwenye biashara yake (`businesses.phone` / `whatsapp`),
+   si kwenye env.
 2. Kwenye dashboard ya Snippe weka webhook: `https://ANWANI_YAKO/api/webhooks/snippe`
    (lazima HTTPS, na `NEXT_PUBLIC_SITE_URL` iwe anwani hiyo hiyo).
 3. Thibitisha anwani za API kwenye dokumenti za Snippe. `src/lib/snippe.ts` hutumia
@@ -551,19 +585,22 @@ unaonyesha tu kilichopo kwenye hifadhidata.
 | `Could not find the 'scheduled_at' column of 'orders' in the schema cache` | Oda iliona **Chagua saa**, lakini mradi wako una jedwali la zamani | SQL Editor: `alter table public.orders add column if not exists scheduled_at timestamptz;` |
 | `Bucket not found` (`media`) | Schema haijatumika, au kikapu kimefutwa | Schema huunda kikapu `media` (public) |
 | Kurasa zinaonyesha `SetupNotice` | `.env.local` haipo, au `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` ni tupu | Jaza fungo, kisha uwashe upya `npm run dev` |
-| Magic link haifiki au hurejesha kosa | Redirect URL haijaruhusiwa, au kikomo cha barua pepe za default cha Supabase kimefikwa | Ongeza `/auth/callback` kwenye Redirect URLs; weka SMTP yako (Auth → SMTP) |
+| Barua pepe ya uthibitisho haifiki au hurejesha kosa | Redirect URL haijaruhusiwa, au kikomo cha barua pepe za default cha Supabase kimefikwa | Ongeza `/auth/callback` kwenye Redirect URLs; weka SMTP yako (Auth → SMTP) |
 | `Blocked cross-origin request to Next.js dev resource` (unapotumia `http://192.168.x.x:3000`) | Next ya dev hupakia JavaScript kutoka anwani zilizo kwenye orodha pekee | Weka anwani unayotumia kwenye `IAA_DEV_ORIGINS` katika `.env.local` (mf. `192.168.1.20`), kisha uwashe upya `npm run dev`; au tumia `localhost` |
 | Kubofya EN/SW hakubadilishi kitu | Kibadilishi ni kiungo cha kwenda `/api/lang`; ikiwa seva imesimama au ukurasa ni wa zamani, hakuna kitu kinachotokea | Pakia upya (`Shift+F5`); hakikisha `npm run dev` inakimbia; fungua `/api/lang?lang=en` ili kuona kosa la seva |
 | `ERROR: 42703: column "email" does not exist` (SQL Editor) | `public.profiles` haina `email`; barua pepe ipo kwenye `auth.users` | Tumia `update public.profiles p set is_admin = true from auth.users u where p.id = u.id and u.email = '…'` — ona hatua (d) |
-| `update … 0 rows` (kuwa msimamizi) | Profaili huundwa baada ya mtumiaji kuingia mara ya kwanza | Aingie `/login` kwa kiungo cha barua pepe kwanza, kisha urudie `update` |
-| Kitufe cha Google kinarudisha ujumbe wa kosa | provider ya Google haijawashwa kwenye Supabase, au redirect URI ya Google Cloud si sahihi | Fuata hatua (e); badala yake tumia "Ingia au jisajili kwa barua pepe" |
-| `Email link is invalid or has expired` kwenye `/login` | Kiungo cha magic link hutumika mara moja na huisha baada ya dakika chache; au ulikifungua kwenye browser tofauti na ile iliyoomba | Tuma kiungo kipya kwenye browser ileile; onyo husimama ukibofya "Ingia au jisajili" |
-| `email rate limit exceeded` (unapotuma kiungo) | Mailer ya default ya Supabase ina kikomo kidogo (takriban 2 barua pepe kwa saa kwa mradi) | Weka Brevo SMTP kama hatua (f) inavyoonyesha, kisha uombe kiungo upya |
+| `update … 0 rows` (kuwa msimamizi) | Profaili huundwa baada ya mtumiaji kuthibitisha akaunti | Akamilishe `/login` (jisajili + thibitisha barua pepe) kwanza, kisha urudie `update` |
+| Kitufe cha Google kinarudisha ujumbe wa kosa | provider ya Google haijawashwa kwenye Supabase, au redirect URI ya Google Cloud si sahihi | Fuata hatua (e); badala yake tumia tabo **Ingia** ya barua pepe na nenosiri |
+| `Email link is invalid or has expired` kwenye `/login` | Kiungo cha uthibitisho/kurejesha nenosiri hutumika mara moja na huisha baada ya dakika chache; au ulikifungua kwenye browser tofauti na ile iliyoomba | Omba kiungo kipya kwenye browser ileile; kwenye `/login` bofya **Tuma tena** au fungua `/reset-password` upya |
+| `email rate limit exceeded` (unapotuma barua pepe) | Mailer ya default ya Supabase ina kikomo kidogo (takriban 2 barua pepe kwa saa kwa mradi) | Weka Brevo SMTP kama hatua (f) inavyoonyesha, kisha uombe kiungo upya |
+| `Error sending recovery email` / `Error sending confirmation email` (500) | Supabase imeshindwa kuwasiliana na SMTP; mara nyingi ni SMTP key isiyo sahihi, username ni hostname, au sender haijathibitishwa | Supabase → Authentication → Logs → tafuta `error_id`; kisha rekebisha SMTP Settings kwa hatua (f). Ukiwa na Gmail, tumia **Endelea na Google** kwa muda |
+| Brevo: `525 5.7.1 Unauthorized IP address` | Brevo iwezesha kizuizi cha IP; Supabase hutuma kutoka IP zinazobadilika | Brevo → Settings → Security → Authorized IPs → zima kizuizi (au bofya link kwenye banner ya bluu ya SMTP) |
+| `Invalid login credentials` | Nenosiri au barua pepe si sahihi, au akaunti haijathibitishwa bado | Hakikisha barua pepe imethibitishwa; tumia **Umesahau nenosiri?** kama nenosiri limesahaulika |
+| `User already registered` | Mtu anajaribu kujisajili kwa barua pepe iliyopo | Bofya tabo **Ingia**, au tumia **Umesahau nenosiri?** |
 | Brevo: `535 authentication failed` baada ya Save | Uliweka **API key** kwenye Password badala ya **SMTP key**, au ulitumia `smtp-relay.brevo.com` kama Username badala ya **Login** | Ona hatua (f) → "Makosa mawili ya Brevo"; tengeneza SMTP key mpya |
 | Brevo: `550 Domain is not verified` | Sender Email iko kwenye domeini ambayo huna (mf. `@gmail.com`) au haijathibitishwa | Thibitisha domeini yako kwenye Brevo, au tumia Gmail app password kama hatua (f) → "Ukiwa huna domeini" |
-| `PKCE code verifier not found in storage` | Kiungo kilifunguliwa kwenye browser/device tofauti na ile iliyoomba, au cookies za `localhost` zimefutwa | Tumia njia ya **namba ya OTP** — hatua (h) — au fungua kiungo kwenye browser ileile uliyotumia `/login` |
-| Namba za OTP zinaonekana **8** lakini kisanduku kilikataa | Supabase hutuma namba 6 au 8 kulingana na mpangilio wa mradi (`OTP_LENGTH`); kisanduku chetu huruhusu 6 hadi 8 | Andika namba zote ulizopata kwenye barua pepe — kitufe cha "Thibitisha" huwasha tikakamilisha namba 6 au zaidi |
-| `WebCrypto API is not supported. Code challenge method will default to use plain instead of sha256` (browser) | Unafungua tovuti kutoka anwani isiyo secure — `crypto.subtle` haipatikani nje ya `https://` na `http://localhost`/`127.0.0.1`, mf. `http://192.168.x.x:3000` | Onjoro tu, si kosa: kiungo bado kitafanya kazi (kwenye browser ileile). Ukipenda kuona safi, tumia `http://localhost:3000`, au upatie HTTPS kwa simu (tunnel ya mf. `cloudflared`) na usasishe `NEXT_PUBLIC_SITE_URL`. **Njia ya namba ya OTP haiathiriwi** — `verifyOtp` haitumii PKCE, kwa hivyo hufungua session kwenye browser yoyote |
+| `PKCE code verifier not found in storage` | Kiungo cha kurejesha nenosiri au cha Google kilifunguliwa kwenye browser/device tofauti na ile iliyoomba, au cookies zimefutwa | Fungua kiungo kwenye browser ileile uliyotumia kuomba; kama haiwezekani, omba kiungo kipya hapo |
+| `WebCrypto API is not supported. Code challenge method will default to use plain instead of sha256` (browser) | Unafungua tovuti kutoka anwani isiyo secure — `crypto.subtle` haipatikani nje ya `https://` na `http://localhost`/`127.0.0.1`, mf. `http://192.168.x.x:3000` | Onyo tu, si kosa: huingia kwa barua pepe na nenosiri bila athari. Ukipenda kuona safi tumia `http://localhost:3000`, au upatie HTTPS (tunnel ya mf. `cloudflared`) na usasishe `NEXT_PUBLIC_SITE_URL` |
 | `supabase.auth.signInWithOauth is not a function` (browser) | Kibadili-haraka (Fast Refresh) kiliacha bundle ya zamani baada ya mabadiliko ya `translations.ts` | Pakia upya kwa nguvu: `Shift+F5` kwenye `/login` |
 
 Ukosa wowote wa hifadhidata huonyeshwa na `src/app/error.tsx`: ujumbe wa kweli (SW/EN)
@@ -599,8 +636,8 @@ npm run build
 npm start
 ```
 
-- Weka `NEXT_PUBLIC_SITE_URL` = anwani halisi ya HTTPS — magic link na webhook
-  zinategemea.
+- Weka `NEXT_PUBLIC_SITE_URL` = anwani halisi ya HTTPS — viungo vya uthibitisho wa
+  barua pepe, kurejesha nenosiri na webhook zinategemea.
 - Ongeza `https://ANWANI_YAKO/auth/callback` kwenye Supabase Redirect URLs.
 - Webhook ya Snippe huhitaji anwani ya nje ya HTTPS.
 - Hakikisha `SUPABASE_SERVICE_ROLE_KEY` na `SNIPPE_API_KEY` vipo kwenye mazingira ya seva

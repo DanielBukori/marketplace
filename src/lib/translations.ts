@@ -38,8 +38,11 @@ const sw = {
     },
   },
   nav: {
+    home: "Nyumbani",
     marketplace: "Sokoni",
     food: "Msosi Fasta",
+    foodShort: "Msosi",
+    ordersShort: "Oda",
     services: "Huduma",
     rooms: "Vyumba",
     news: "Habari & Matukio",
@@ -57,6 +60,7 @@ const sw = {
     openMenu: "Fungua menyu",
     closeMenu: "Funga menyu",
     language: "Badilisha lugha",
+    tabBar: "Menyu ya chini",
   },
   home: {
     badge: "Soko la IAA Arusha — wauzaji wote wanakubalika",
@@ -72,7 +76,7 @@ const sw = {
     foodCta: "Agiza chakula",
     foodBadge: "Tigo Pesa · Mixx Yas · Airtel Money",
     sokoniTitle: "Sokoni",
-    sokoniDesc: "Nunua na uze bidhaa used, vyumba na vifaa vya masomo",
+    sokoniDesc: "Nunua na uze bidhaa zilizotumika, vyumba na vifaa vya masomo",
     sokoniCta: "Ingia Sokoni",
     servicesCta: "Tazama huduma",
     servicesBadge: "Bei ya kweli",
@@ -107,7 +111,7 @@ const sw = {
         eyebrow: "Msosi Fasta",
         title: "Chakula kutoka kwa wauzaji wa karibu",
         caption:
-          "Agiza, lipa kwa Tigo Pesa, Mixx Yas au Airtel Money, kisha chukua au omba delivery.",
+          "Agiza, lipa kwa Tigo Pesa, Mixx Yas au Airtel Money, kisha chukua au omba upelekezaji.",
       },
       {
         eyebrow: "Wauzaji wote",
@@ -231,7 +235,7 @@ const sw = {
       eyebrow: "MSOSI FASTA",
       title: "Agiza chakula kutoka kwa wauzaji wa uani",
       quote:
-        "Lipa kwa Tigo Pesa, Mixx Yas au Airtel Money, kisha uchague pickup au delivery.",
+        "Lipa kwa Tigo Pesa, Mixx Yas au Airtel Money, kisha uchague kuchukua mwenyewe au upelekezaji.",
       cta: "Agiza chakula",
     },
   ],
@@ -322,7 +326,7 @@ const sw = {
     locationPlaceholder: "Mfano: Lupeta, karibu na arena",
     hours: "Saa za kazi",
     hoursPlaceholder: "Mfano: 07:00 – 22:00",
-    deliveryFee: "Gharama ya delivery (TSh)",
+    deliveryFee: "Gharama ya upelekezaji (TSh)",
     logo: "Logo (si lazima)",
     save: "Hifadhi biashara",
     update: "Sasisha biashara",
@@ -421,7 +425,7 @@ const sw = {
     items: "Vipande",
     total: "Jumla",
     contact: "Mawasiliano",
-    address: "Anwani ya delivery",
+    address: "Anwani ya upelekezaji",
     pickup: "Kuchukua mwenyewe",
     whenLabel: "Muda uliouchagua",
     meetupLabel: "Mahali pa kukutana",
@@ -577,13 +581,13 @@ const sw = {
     meetupLabel: "Mahali pa kukutana (si lazima)",
     meetupPlaceholder: "Mfano: mlangoni mwa ukumbi wa B",
     meetupHint:
-      "Ukichagua kuchukua mwenyewe au kuweka pre-order, andika mahali muuzaji atakukutia; hakuna gharama ya delivery.",
+      "Ukichagua kuchukua mwenyewe au kuagiza mapema, andika mahali muuzaji atakukutia; hakuna gharama ya upelekezaji.",
     payCash: "Nitalipa pesa mikononi (cash)",
     placeOrder: "Weka oda",
     placing: "Inaweka...",
     empty: "Chagua angalayo kipande kimoja.",
     itemTotal: "Jumla ya bidhaa",
-    fee: "Gharama ya delivery",
+    fee: "Gharama ya upelekezaji",
     feePickup: "Delivery (kuchukua mwenyewe)",
     total: "Jumla",
     paidTitle: "Malipo yamepokelewa",
@@ -596,32 +600,55 @@ const sw = {
   },
   auth: {
     backHome: "Rudi nyumbani",
-    dialogTitle: "Jiunge na IAA Marketplace",
+    dialogTitle: "Ingia au jiunge na IAA Marketplace",
     dialogSubtitle:
-      "Uza, nunua au weka huduma yako huko Arusha. Kuingia kunachukua barua pepe yako pekee — hakuna nenosiri.",
+      "Uza, nunua au weka huduma yako Arusha. Weka barua pepe, nenosiri na namba ya simu kwa taarifa za oda.",
     google: "Endelea na Google",
     or: "au",
-    emailRow: "Ingia au jisajili kwa barua pepe",
     campusRow: "Endelea na kitambulisho cha chuo",
-    comingSoon: "Karibu hivi karibuni",
+    comingSoon: "Inakuja hivi karibuni",
     campusNote:
       "Inahitaji mfumo wa kuthibitishia wa chuo (SSO) ambao IAA bado haijatoa — barua pepe hufanya kazi leo.",
-    createTitle: "Ingia au fungua akaunti",
-    createDesc:
-      "Tutakutumia kiungo cha kuthibitisha kwenye barua pepe hii. Huna akaunti bado? Tutaiunda yenyewe.",
-    fullName: "Jina kamili",
-    fullNamePlaceholder: "mf. Amina Joseph",
-    phone: "Nambari ya simu",
-    phonePlaceholder: "2557........",
+    signInTab: "Ingia",
+    signUpTab: "Jisajili",
+    signInTitle: "Karibu tena",
+    signInDesc: "Weka barua pepe na nenosiri lako kuingia.",
+    signUpTitle: "Fungua akaunti",
+    signUpDesc:
+      "Barua pepe, nenosiri na namba ya simu pekee. Namba hutumika kukutumia taarifa za oda.",
     email: "Barua pepe",
     emailPlaceholder: "jina@iaa.ac.tz au nyingine yoyote",
-    sendLink: "Tuma kiungo cha kuingia",
-    sending: "Inatuma…",
+    phone: "Nambari ya simu",
+    phonePlaceholder: "0712 345 678",
+    phoneHint: "Taarifa za oda na malipo hutumwa kwenye namba hii.",
+    password: "Nenosiri",
+    passwordPlaceholder: "Herufi 8 au zaidi",
+    passwordHint: "Tumia herufi 8 au zaidi, pamoja na namba.",
+    showPassword: "Onyesha nenosiri",
+    hidePassword: "Ficha nenosiri",
+    signInCta: "Ingia",
+    signInBusy: "Inaingia…",
+    signUpCta: "Fungua akaunti",
+    signUpBusy: "Inatengeneza akaunti…",
+    forgot: "Umesahau nenosiri?",
+    haveAccount: "Tayari una akaunti?",
+    needAccount: "Huna akaunti bado?",
+    confirmTitle: "Thibitisha barua pepe yako",
+    confirmBody:
+      "Tumekutumia barua pepe kwa {email}. Bofya kiungo kilichomo, au andika namba ya uthibitisho hapa chini. Kama hujaiona baada ya dakika 2, angalia Spam.",
+    confirmCodeLabel: "Namba ya uthibitisho",
+    confirmCodeHint:
+      "Andika namba 6–8 zilizo kwenye barua pepe badala ya kubofya kiungo. Namba hii hufanya kazi hata kwenye simu.",
+    confirmCodeCta: "Thibitisha namba",
+    confirmCodeBusy: "Inathibitisha…",
+    resend: "Tuma barua pepe tena",
+    resending: "Inatuma…",
+    resent: "Barua pepe imetumwa tena.",
     backToOptions: "Rudi kwenye chaguzi",
     linkErrorTitle: "Kiungo hicho hakikufanya kazi",
     providerErrorTitle: "Google haikukamilisha kuingia",
     linkErrorBody:
-      "Kila kiungo cha kuingia hutumika mara moja tu na huisha baada ya dakika chache. Tuma kipya badala ya kutumia barua pepe ya zamani.",
+      "Kiungo hiki ni cha mara moja na huisha baada ya dakika chache. Omba kipya badala ya kufungua barua pepe ya zamani.",
     errRateLimit:
       "Kikomo cha barua pepe cha Supabase kimefikwa (mailer ya default huruhusu chache kwa saa). Weka SMTP yako — README hatua (f) — kisha jaribu tena.",
     errRedirect:
@@ -630,27 +657,43 @@ const sw = {
       "Kiungo lazima kifunguliwe kwenye browser ileile kilichotuma ombi (cookies za `localhost`). Tuma kiungo kipya kwenye browser hiyo.",
     errSignupDisabled:
       "Usajili umezimwa kwenye mradi huu. Supabase → Authentication → Sign In / Providers → washia 'Allow new users'.",
-    errToken: "Namba hiyo si sahihi au imeisha muda wake. Tuma namba mpya kisha uiandike mara moja.",
+    errToken: "Kiungo hiki si sahihi au kimeisha muda wake. Omba kipya.",
     errBadEmail:
-      "Anwani ya barua pepe imekatika. Andika kamili, mfano jina@mfano.com.",
+      "Barua pepe hii haikubaliki. Tumia anwani halisi unayoifikia, mfano jina@gmail.com au jina@iaa.ac.tz.",
     errNotConfirmed:
-      "Akaunti hii haijathibitishwa bado. Tuma kiungo kipya kisha kifungue mara moja ndani ya dakika chache.",
+      "Akaunti hii haijathibitishwa bado. Fungua kiungo cha barua pepe kisha uingie tena.",
     errSmtp:
       "Supabase ilishindwa kutuma barua pepe kupitia mailer yake. Angalia Supabase → Authentication → SMTP Settings: Brevo anahitaji **SMTP key** (si API key) na Username ya Brevo (si hostname), na Sender lazima iwe kwenye domeini uliyothibitisha — README hatua (f).",
     errGoogle:
       "Google ilikataa kubadilishana code na Supabase. Kwenye Google Cloud → Google Auth Platform: (1) OAuth client iwe **Web application**, (2) `https://<project-ref>.supabase.co/auth/v1/callback` iwe kwenye **Authorized redirect URIs**, (3) Client ID na Secret kwenye Supabase viwe vilevile, (4) consent screen iwe **Published** (si Testing). Sababu kamili huonekana kwenye Supabase → Authentication → Logs.",
-    codeIntro:
-      "Unasoma barua pepe kwenye simu? Andika namba iliyo ndani yake hapa (namba 6 au 8, kulingana na Supabase yako) — huhitaji kufungua kiungo.",
-    codeLabel: "Namba ya OTP",
-    codePlaceholder: "12345678",
-    codeVerify: "Thibitisha namba",
-    codeVerifying: "Inathibitisha…",
-    sentTitle: "Tumetuma barua pepe",
-    sentBody:
-      "Tumetuma kiungo na namba ya OTP kwa {email}. Fungua kiungo kwenye browser hii, au andika namba hiyo hapa chini.",
-    sentOther: "Tumia anwani nyingine",
+    errInvalidCreds: "Barua pepe au nenosiri si sahihi. Jaribu tena.",
+    errWeakPassword: "Nenosiri ni fupi. Tumia herufi 8 au zaidi.",
+    errUserExists:
+      "Barua pepe hii tayari ina akaunti. Ingia badala yake — na kama huna nenosiri, bofya 'Umesahau nenosiri?' chini ya fomu.",
+    errPhone: "Andika namba halali ya simu, mf. 0712 345 678.",
     agreement:
       "Kwa kuendelea unakubali masharti ya matumizi na sera ya faragha ya IAA Marketplace.",
+  },
+  reset: {
+    title: "Rejesha nenosiri",
+    intro:
+      "Andika barua pepe uliyotumia kufungua akaunti; tutakutumia kiungo cha kuweka nenosiri jipya.",
+    requestCta: "Tuma kiungo",
+    requesting: "Inatuma…",
+    sentTitle: "Angalia barua pepe yako",
+    sentBody:
+      "Kama akaunti ya {email} ipo, tumetuma kiungo cha kurejesha nenosiri. Kifungue kwenye kivinjari hiki.",
+    newTitle: "Weka nenosiri jipya",
+    newIntro: "Chagua nenosiri jipya la herufi 8 au zaidi.",
+    saveCta: "Hifadhi nenosiri",
+    saving: "Inahifadhi…",
+    doneTitle: "Nenosiri limebadilishwa",
+    doneBody: "Sasa unaweza kuingia na nenosiri jipya.",
+    doneCta: "Nenda kwenye akaunti",
+    back: "Rudi kuingia",
+    errSession:
+      "Kiungo hiki hakina kipindi halali. Omba kiungo kipya cha kurejesha nenosiri.",
+    errWeak: "Nenosiri ni fupi. Tumia herufi 8 au zaidi.",
   },
   money: {
     fee: "Toleo la mfumo",
@@ -704,6 +747,8 @@ const sw = {
     desc: "Ukurasa hauwezi kuonyesha data ya hifadhidata kwa sasa. Kwa kawaida huwa ni fungo za Supabase katika .env.local ambazo si za mradi ule ule, au supabase/schema.sql ambayo haijatumika bado. Angalia hivyo, kisha jaribu tena.",
     schemaHint:
       "Meza mpya za mfumo bado hazipo kwenye Supabase. Fungua dashboard ya Supabase → SQL Editor → bandika yaliyomo kote katika supabase/schema.sql → Run (faili hii huongeza tu vilivyokosekana, hakuna data inayofutwa), kisha jaribu tena.",
+    unreachable:
+      "Mradi wa Supabase haupatikani kwenye mtandao. Anwani ya NEXT_PUBLIC_SUPABASE_URL inaweza kuwa ya mradi uliofutwa, umesitishwa, au imeandikwa vibaya. Fungua dashboard ya Supabase: kama mradi upo, nakili Project URL na fungo lake upya kwenye .env.local kisha uwashe upya seva.",
     noMessage: "Hakuna ujumbe wa makosa kutoka kwa seva.",
     home: "Nenda ukuranani",
   },
@@ -754,7 +799,7 @@ const sw = {
     increase: "Ongeza",
     decrease: "Punguza",
     itemsCount: "vipande {count}",
-    feeIncluded: "jumlisha delivery {fee}",
+    feeIncluded: "jumlisha upelekezaji {fee}",
     deliveryFee: "Delivery {fee}",
     order: "Weka oda",
     closed: "Duka hili limezimdwa kwa sasa.",
@@ -778,7 +823,7 @@ const sw = {
       "Andika chapisho halisi — kile unachochapisha kinaonekana kwa wote kwenye ukurasa wa habari.",
     noBusiness: "Hakuna biashara ziliyowekwa bado.",
     notSpecified: "mahali haijaelezwa",
-    noDelivery: "hakuna delivery",
+    noDelivery: "hakuna upelekezaji",
     created: "iliundwa {date}",
     verifyAdd: "Weka Verified",
     verifyRemove: "Ondoa Verified",
@@ -814,7 +859,7 @@ const sw = {
   },
   offerScope: {
     items: "bei za bidhaa",
-    delivery: "gharama ya delivery",
+    delivery: "gharama ya upelekezaji",
     all: "jumla ya oda",
   },
   reviews: {
@@ -1290,7 +1335,7 @@ const sw = {
           "Fungua ukurasa wa mgahawa, chagua vifungo vya asubuhi hadi jioni, kisha ulipe kwa MPesa, Airtel Money, Mixx Yas au Halotel — au lipa mikononi unapochukua.",
         points: [
           "Chagua \"Nipeleke\" kisha eneo lako kwenye orodha ya maeneo ya chuo",
-          "Au chagua \"Nitachukua mwenyewe\" bila gharama ya delivery",
+          "Au chagua \"Nitachukua mwenyewe\" bila gharama ya upelekezaji",
           "Weka saa unayotaka chakula kiandaliwe — si lazima kiwe sasa hivi",
         ],
       },
@@ -1350,7 +1395,7 @@ const sw = {
     terms: "Masharti ya Matumizi",
   },
   links: {
-    usedItems: "Bidhaa used",
+    usedItems: "Bidhaa zilizotumika",
     roomsGhetto: "Vyumba & Ghetto",
     postAd: "Weka tangazo",
     myBusiness: "Biashara yangu",
@@ -1399,8 +1444,11 @@ const en: Dict = {
     },
   },
   nav: {
+    home: "Home",
     marketplace: "Marketplace",
     food: "Msosi Fasta",
+    foodShort: "Food",
+    ordersShort: "Orders",
     services: "Services",
     rooms: "Rooms",
     news: "News & Events",
@@ -1418,6 +1466,7 @@ const en: Dict = {
     openMenu: "Open menu",
     closeMenu: "Close menu",
     language: "Change language",
+    tabBar: "Bottom menu",
   },
   home: {
     badge: "The IAA Arusha market — every seller is welcome",
@@ -1958,32 +2007,55 @@ const en: Dict = {
   },
   auth: {
     backHome: "Back to home",
-    dialogTitle: "Join IAA Marketplace",
+    dialogTitle: "Sign in or join IAA Marketplace",
     dialogSubtitle:
-      "Sell, buy or list a service in Arusha. Signing in takes nothing but your email — no password.",
+      "Sell, buy or list a service in Arusha. Enter your email, password and phone number for order updates.",
     google: "Continue with Google",
     or: "or",
-    emailRow: "Sign in or sign up with email",
     campusRow: "Continue with University ID",
     comingSoon: "Coming soon",
     campusNote:
       "Needs a campus verification system (SSO) that IAA has not launched yet — email sign-in works today.",
-    createTitle: "Sign in or create an account",
-    createDesc:
-      "We'll send a sign-in link to this email address. No account yet? We create one for you.",
-    fullName: "Full name",
-    fullNamePlaceholder: "e.g. Amina Joseph",
-    phone: "Phone number",
-    phonePlaceholder: "2557........",
+    signInTab: "Sign in",
+    signUpTab: "Sign up",
+    signInTitle: "Welcome back",
+    signInDesc: "Enter your email and password to sign in.",
+    signUpTitle: "Create an account",
+    signUpDesc:
+      "Just your email, password and phone number. The number is used for order updates.",
     email: "Email",
     emailPlaceholder: "name@iaa.ac.tz or any other",
-    sendLink: "Send the sign-in link",
-    sending: "Sending…",
+    phone: "Phone number",
+    phonePlaceholder: "0712 345 678",
+    phoneHint: "Order and payment updates are sent to this number.",
+    password: "Password",
+    passwordPlaceholder: "8 characters or more",
+    passwordHint: "Use 8 characters or more, including a number.",
+    showPassword: "Show password",
+    hidePassword: "Hide password",
+    signInCta: "Sign in",
+    signInBusy: "Signing in…",
+    signUpCta: "Create account",
+    signUpBusy: "Creating account…",
+    forgot: "Forgot your password?",
+    haveAccount: "Already have an account?",
+    needAccount: "No account yet?",
+    confirmTitle: "Confirm your email",
+    confirmBody:
+      "We sent an email to {email}. Open the link inside, or type the confirmation code below. If it has not arrived after 2 minutes, check Spam.",
+    confirmCodeLabel: "Confirmation code",
+    confirmCodeHint:
+      "Type the 6–8 digits from the email instead of opening the link. The code also works on your phone.",
+    confirmCodeCta: "Confirm the code",
+    confirmCodeBusy: "Confirming…",
+    resend: "Send the email again",
+    resending: "Sending…",
+    resent: "The email has been sent again.",
     backToOptions: "Back to options",
     linkErrorTitle: "That link did not work",
     providerErrorTitle: "Google did not finish signing you in",
     linkErrorBody:
-      "Each sign-in link can be used once and expires after a few minutes. Request a new one instead of reopening the old email.",
+      "A link can be used once and expires after a few minutes. Request a new one instead of reopening the old email.",
     errRateLimit:
       "Supabase hit its email rate limit (the built-in mailer only allows a few per hour). Configure your own SMTP — README step (f) — then try again.",
     errRedirect:
@@ -1992,26 +2064,43 @@ const en: Dict = {
       "The link must be opened in the same browser that requested it (the `localhost` cookies). Request a new link there.",
     errSignupDisabled:
       "Sign-ups are switched off for this project. Supabase → Authentication → turn off 'Disable sign-ups'.",
-    errToken: "That code is wrong or has expired. Request a new code and enter it right away.",
-    errBadEmail: "That email address is incomplete. Write the full address, e.g. name@example.com.",
+    errToken: "That link is wrong or has expired. Request a new one.",
+    errBadEmail:
+      "This email address is not accepted. Use a real address you can open, e.g. name@gmail.com or name@iaa.ac.tz.",
     errNotConfirmed:
-      "This account is not confirmed yet. Send a fresh link and open it right away, within a few minutes.",
+      "This account is not confirmed yet. Open the email link, then sign in again.",
     errSmtp:
       "Supabase could not send the email through its mailer. Check Supabase → Authentication → SMTP Settings: Brevo needs the **SMTP key** (not the API key) and the Brevo Login (not the hostname), and the Sender must sit on a domain you verified — README step (f).",
     errGoogle:
       "Google refused to exchange the code with Supabase. In Google Cloud → Google Auth Platform: (1) the OAuth client must be a **Web application**, (2) `https://<project-ref>.supabase.co/auth/v1/callback` must be listed under **Authorized redirect URIs**, (3) the Client ID and Secret in Supabase must match exactly, (4) the consent screen must be **Published** (not Testing). The precise reason shows in Supabase → Authentication → Logs.",
-    codeIntro:
-      "Reading the email on your phone? Type the code from it here (6 or 8 digits, depending on your Supabase project) — no need to open the link.",
-    codeLabel: "OTP code",
-    codePlaceholder: "12345678",
-    codeVerify: "Verify the code",
-    codeVerifying: "Verifying…",
-    sentTitle: "We sent you an email",
-    sentBody:
-      "We sent a link and an OTP code to {email}. Open the link in this browser, or type the code below.",
-    sentOther: "Use another address",
+    errInvalidCreds: "Email or password is incorrect. Try again.",
+    errWeakPassword: "That password is too short. Use 8 characters or more.",
+    errUserExists:
+      "This email already has an account. Sign in instead — if you don't have a password, use 'Forgot your password?' below the form.",
+    errPhone: "Enter a valid phone number, e.g. 0712 345 678.",
     agreement:
       "By continuing you accept the IAA Marketplace terms of service and privacy policy.",
+  },
+  reset: {
+    title: "Reset password",
+    intro:
+      "Enter the email you used to create your account; we will send you a link to set a new password.",
+    requestCta: "Send the link",
+    requesting: "Sending…",
+    sentTitle: "Check your email",
+    sentBody:
+      "If an account for {email} exists, we sent a password reset link. Open it in this browser.",
+    newTitle: "Set a new password",
+    newIntro: "Choose a new password with 8 characters or more.",
+    saveCta: "Save password",
+    saving: "Saving…",
+    doneTitle: "Password changed",
+    doneBody: "You can now sign in with your new password.",
+    doneCta: "Go to your account",
+    back: "Back to sign in",
+    errSession:
+      "This link has no valid session. Request a new password reset link.",
+    errWeak: "That password is too short. Use 8 characters or more.",
   },
   money: {
     fee: "Platform fee",
@@ -2063,6 +2152,8 @@ const en: Dict = {
     desc: "This page could not load its database data. Usually the Supabase keys in .env.local are not from the same project, or supabase/schema.sql has not been run yet. Check those, then try again.",
     schemaHint:
       "The marketplace's newer tables are not in Supabase yet. Open the Supabase dashboard → SQL Editor → paste the full contents of supabase/schema.sql → Run (that file only adds what is missing, it deletes no data), then try again.",
+    unreachable:
+      "The Supabase project cannot be reached. The NEXT_PUBLIC_SUPABASE_URL may point to a deleted or paused project, or be mistyped. Open the Supabase dashboard: if the project still exists, copy its Project URL and keys into .env.local and restart the server.",
     noMessage: "The server returned no error message.",
     home: "Go to the home page",
   },

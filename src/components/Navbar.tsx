@@ -61,17 +61,17 @@ export default function Navbar() {
     .join("");
 
   return (
-    <header className="sticky top-0 z-50 border-b border-black/5 bg-paper-50/85 backdrop-blur-md">
-      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between gap-4 px-4 sm:gap-6 sm:px-6 lg:px-8">
-        <Link href="/" className="flex shrink-0 items-center gap-3">
+    <header className="sticky top-0 z-50 border-b border-black/5 bg-paper-50/90 pt-[env(safe-area-inset-top)] backdrop-blur-md">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4 sm:gap-6 sm:px-6 lg:h-[72px] lg:px-8">
+        <Link href="/" className="flex min-w-0 shrink items-center gap-2.5">
           <Image
             src="/iaa/iaa-crest.png"
             width={90}
             height={87}
             alt={t.brand.name}
-            className="h-10 w-auto"
+            className="h-9 w-auto shrink-0 sm:h-10"
           />
-          <span className="text-xl font-extrabold tracking-tight text-ink-900">
+          <span className="truncate text-[17px] font-extrabold tracking-tight text-ink-900 sm:text-xl">
             {t.brand.name} <span className="text-primary-600">{t.brand.suffix}</span>
           </span>
         </Link>
@@ -142,7 +142,7 @@ export default function Navbar() {
       </div>
 
       {open && (
-        <div className="border-t border-black/5 bg-white px-4 pb-5 pt-3 sm:hidden">
+        <div className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-black/5 bg-white px-4 pb-24 pt-3 sm:hidden">
           <nav className="grid gap-1">
             {links.map((l) => (
               <Link

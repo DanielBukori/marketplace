@@ -21,6 +21,11 @@ export default function AppError({
   // Kwa hivyo toa maelekezo ya vitende kufanya badala ya kuonyesha kosa gumu.
   const schemaMissing =
     error.message.includes("42703") || error.message.includes("PGRST205");
+  // Mradi uliofutwa au NEXT_PUBLIC_SUPABASE_URL yenye kosa huleta
+  // ENOTFOUND/fetch failed — hii si kosa la schema, ni la mipangilio.
+  const unreachable = /fetch failed|enotfound|econnrefused|getaddrinfo|network/i.test(
+    error.message,
+  );
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-20 text-center sm:px-6 lg:px-8">
@@ -28,7 +33,11 @@ export default function AppError({
         {t.error.title}
       </h1>
       <p className="mt-3 text-[15px] leading-relaxed text-gray-500">
-        {schemaMissing ? t.error.schemaHint : t.error.desc}
+        {unreachable
+          ? t.error.unreachable
+          : schemaMissing
+            ? t.error.schemaHint
+            : t.error.desc}
       </p>
 
       {process.env.NODE_ENV === "development" && (

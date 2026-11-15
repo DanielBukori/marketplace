@@ -7,9 +7,14 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const nextParam = searchParams.get("next") ?? "/dashboard";
   // Ruga za ndani tu: uzuie mshambuliaji kutuma mtumiaji kwenye domeini nyingine.
-  // `//host` ni protocol-relative, hivyo ni pamoja na `//` katika kukataa.
+  // `//host` ni protocol-relative; `/\host` pia hugeuzwa kuwa `//host` na
+  // kivinjari, hivyo backslash yoyote inakataliwa.
   const safeNext =
-    nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/dashboard";
+    nextParam.startsWith("/") &&
+    !nextParam.startsWith("//") &&
+    !nextParam.includes("\\")
+      ? nextParam
+      : "/dashboard";
 
   const loginUrl = new URL("/login", origin);
   if (safeNext !== "/dashboard") loginUrl.searchParams.set("next", safeNext);

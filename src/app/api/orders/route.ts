@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getT } from "@/lib/i18n-server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient, isAdminClientConfigured } from "@/lib/supabase/admin";
 import { getZonesForBusiness } from "@/lib/db";
 import { isSupabaseConfigured } from "@/lib/media";
 import { notifyOrderStage } from "@/lib/notify";
@@ -179,7 +180,10 @@ export async function POST(request: NextRequest) {
   );
 
   if (itemsError) {
-    await supabase.from("orders").delete().eq("id", order.id);
+    // RLS hauruhusu mnunuzi kufuta oda; seva pekee ndiyo inaweza kuondoa
+    // oda tupu iliyoshindwa kuwekewa vipande.
+    const cleanup = isAdminClientConfigured ? createAdminClient() : supabase;
+    await cleanup.from("orders").delete().eq("id", order.id);
     return NextResponse.json({ message: userError(t, itemsError) }, { status: 400 });
   }
 

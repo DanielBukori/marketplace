@@ -17,6 +17,26 @@ import type {
   SocialLink,
 } from "@/lib/types";
 
+/**
+ * Supabase hurudisha kosa kama kitu kisicho cha `Error`. Next hukibadilisha
+ * kuwa ujumbe usiosomeka (`{message: ..., details: ...}`) kwenye ukurasa wa
+ * kosa, hivyo tunakitengeneza upya ili sababu halisi (mf. `fetch failed`)
+ * ifike kwa mtumiaji na ukurasa uweze kuchagua maelekezo sahihi.
+ */
+type QueryError = {
+  message?: unknown;
+  details?: unknown;
+  code?: unknown;
+};
+
+function queryError(error: QueryError): Error {
+  const text = (value: unknown) =>
+    typeof value === "string" ? value : value ? String(value) : "";
+  const parts = [text(error?.message), text(error?.details), text(error?.code)]
+    .filter(Boolean);
+  return new Error(parts.join(" · ") || "Hifadhidata haikujibu");
+}
+
 const LISTING_FIELDS =
   "id, business_id, title, description, category, condition, price, is_negotiable, stock, status, photo_paths, whatsapp, location, view_count, rating_avg, rating_count, published_at, created_at, business:businesses(id, name, slug, whatsapp, phone, description, location, logo_path, is_verified, rating_avg, rating_count)";
 
@@ -50,7 +70,7 @@ export async function getActiveListings(
   }
 
   const { data, error } = await query;
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as Listing[];
 }
 
@@ -64,7 +84,7 @@ export const getListing = cache(async function getListing(
     .eq("id", id)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data as unknown as Listing) ?? null;
 });
 
@@ -79,7 +99,7 @@ export async function getActiveBusinesses(kind?: Business["kind"]): Promise<Busi
   if (kind) query = query.eq("kind", kind);
 
   const { data, error } = await query;
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as Business[];
 }
 
@@ -91,7 +111,7 @@ export async function getMyBusinesses(userId: string): Promise<Business[]> {
     .eq("owner_id", userId)
     .order("created_at");
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as Business[];
 }
 
@@ -104,7 +124,7 @@ export async function getMyListings(businessIds: string[]): Promise<Listing[]> {
     .in("business_id", businessIds)
     .order("created_at", { ascending: false });
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as Listing[];
 }
 
@@ -116,7 +136,7 @@ export async function getMenuItems(ids: string[]): Promise<MenuItem[]> {
     .select("id, business_id, name, description, price, slot, photo_path, is_available")
     .in("id", ids);
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as MenuItem[];
 }
 
@@ -129,7 +149,7 @@ export async function getMyMenu(businessIds: string[]): Promise<MenuItem[]> {
     .in("business_id", businessIds)
     .order("created_at", { ascending: false });
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as MenuItem[];
 }
 
@@ -142,7 +162,7 @@ export async function getMyPayouts(businessIds: string[]): Promise<Payout[]> {
     .in("business_id", businessIds)
     .order("created_at", { ascending: false });
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as Payout[];
 }
 
@@ -155,7 +175,7 @@ export async function getPayoutQueue(): Promise<Payout[]> {
     .in("status", ["queued", "processing", "failed"])
     .order("created_at", { ascending: true });
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as Payout[];
 }
 
@@ -168,7 +188,7 @@ export async function getAllBusinesses(): Promise<Business[]> {
     .order("created_at", { ascending: false })
     .limit(100);
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as Business[];
 }
 
@@ -193,7 +213,7 @@ export async function getProfile(userId: string): Promise<Profile | null> {
     .eq("id", userId)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? null) as Profile | null;
 }
 
@@ -208,7 +228,7 @@ export async function getAnnouncements(): Promise<Announcement[]> {
     .order("created_at", { ascending: false })
     .limit(30);
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as Announcement[];
 }
 
@@ -221,7 +241,7 @@ export async function getAllAnnouncements(): Promise<Announcement[]> {
     .order("created_at", { ascending: false })
     .limit(60);
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as Announcement[];
 }
 
@@ -238,7 +258,7 @@ export async function getFoodBoard() {
     .order("slot")
     .limit(400);
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return { businesses, menu: (data ?? []) as unknown as MenuItem[] };
 }
 
@@ -252,7 +272,7 @@ export const getBusinessBySlug = cache(async function getBusinessBySlug(
     .eq("slug", slug)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   const business = data as unknown as Business | null;
   if (!business) return null;
 
@@ -290,7 +310,7 @@ export const getBusinessBySlug = cache(async function getBusinessBySlug(
 
   const menuError =
     menu.error ?? listings.error ?? offers.error ?? reviews.error;
-  if (menuError) throw menuError;
+  if (menuError) throw queryError(menuError);
 
   const now = Date.now();
   return {
@@ -312,7 +332,7 @@ export async function getBuyerOrders(buyerId: string): Promise<Order[]> {
     .eq("buyer_id", buyerId)
     .order("created_at", { ascending: false });
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as Order[];
 }
 
@@ -325,7 +345,7 @@ export async function getBusinessOrders(businessIds: string[]): Promise<Order[]>
     .in("business_id", businessIds)
     .order("created_at", { ascending: false });
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as Order[];
 }
 
@@ -338,7 +358,7 @@ export async function getOrderDetail(id: string): Promise<Order | null> {
     .eq("id", id)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   const order = data as unknown as Order | null;
   if (!order) return null;
 
@@ -380,7 +400,7 @@ export async function getBusinessOffers(businessIds: string[]): Promise<Offer[]>
     .in("business_id", businessIds)
     .order("created_at", { ascending: false });
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as Offer[];
 }
 
@@ -395,7 +415,7 @@ export async function getBusinessReviews(businessId: string): Promise<Review[]> 
     .order("created_at", { ascending: false })
     .limit(40);
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as Review[];
 }
 
@@ -413,7 +433,7 @@ export async function getItemReviews(
     .order("created_at", { ascending: false })
     .limit(30);
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as Review[];
 }
 
@@ -457,7 +477,7 @@ export async function getAllSocialLinks(): Promise<SocialLink[]> {
     .order("sort_order")
     .order("platform");
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as SocialLink[];
 }
 
@@ -496,7 +516,7 @@ export async function getAllAdPlans(): Promise<AdPlan[]> {
     .order("sort_order")
     .order("name");
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as AdPlan[];
 }
 
@@ -533,7 +553,7 @@ export async function getMyAds(businessIds: string[]): Promise<Ad[]> {
     .in("business_id", businessIds)
     .order("created_at", { ascending: false });
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as Ad[];
 }
 
@@ -547,7 +567,7 @@ export async function getAllAds(): Promise<Ad[]> {
     .order("created_at", { ascending: false })
     .limit(100);
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as Ad[];
 }
 
@@ -560,7 +580,7 @@ export async function getAllReviews(): Promise<Review[]> {
     .order("created_at", { ascending: false })
     .limit(100);
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as Review[];
 }
 
@@ -610,7 +630,7 @@ export async function getAllOrders(
   }
 
   const { data, error } = await query;
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as Order[];
 }
 
@@ -702,7 +722,7 @@ export async function getAllZones(): Promise<DeliveryZone[]> {
     .order("sort_order")
     .order("name");
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as DeliveryZone[];
 }
 
@@ -801,7 +821,7 @@ export async function getCourierOrders(courierId: string): Promise<Order[]> {
     .order("courier_assigned_at", { ascending: false })
     .limit(60);
 
-  if (error) throw error;
+  if (error) throw queryError(error);
   return (data ?? []) as unknown as Order[];
 }
 
