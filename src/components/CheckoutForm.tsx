@@ -41,6 +41,7 @@ export default function CheckoutForm({
   deliveryFee,
   zones,
   contact,
+  pickupPoint,
 }: {
   lines: CheckoutLine[];
   extras: MenuItem[];
@@ -50,6 +51,8 @@ export default function CheckoutForm({
   /** Maeneo ya chuo ambayo msimamizi ameweka; `null` = safu haijaanzishwa. */
   zones: DeliveryZone[] | null;
   contact: { email: string; phone: string };
+  /** Mahali muuzi alipoandikisha — huonyeshwa kwa oda ya kuchukua mwenyewe. */
+  pickupPoint?: string | null;
 }) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -481,6 +484,15 @@ export default function CheckoutForm({
         </div>
       </fieldset>
 
+      {deliveryMethod === "pickup" && (
+        <div className="rounded-2xl border border-primary-100 bg-primary-50/50 px-4 py-3">
+          <p className="text-sm font-bold text-ink-900">{t.checkout.pickupPointTitle}</p>
+          <p className="mt-1 text-sm leading-relaxed text-gray-600">
+            {pickupPoint?.trim() || t.checkout.pickupPointUnknown}
+          </p>
+        </div>
+      )}
+
       <label className="block">
         <span className="mb-2 block text-sm font-bold text-ink-900">{t.checkout.phone}</span>
         <input
@@ -545,33 +557,44 @@ export default function CheckoutForm({
         </>
       )}
 
-      <label className="block">
-        <span className="mb-2 block text-sm font-bold text-ink-900">{t.checkout.meetupLabel}</span>
-        <input
-          value={meetup}
-          onChange={(e) => setMeetup(e.target.value)}
-          maxLength={120}
-          placeholder={t.checkout.meetupPlaceholder}
-          className="field"
-        />
-        <span className="mt-1.5 block text-xs leading-relaxed text-gray-500">
-          {t.checkout.meetupHint}
-        </span>
-      </label>
+      <details className="rounded-2xl border border-black/5 bg-paper-50 px-4 py-3">
+        <summary className="cursor-pointer text-sm font-bold text-ink-900">
+          {t.checkout.extraDetails}
+        </summary>
+        <p className="mt-1 text-xs leading-relaxed text-gray-500">{t.checkout.extraDetailsHint}</p>
 
-      <label className="block">
-        <span className="mb-2 block text-sm font-bold text-ink-900">
-          {t.checkout.noteLabel}
-        </span>
-        <textarea
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          rows={3}
-          maxLength={300}
-          placeholder={t.checkout.notePlaceholder}
-          className="field resize-y"
-        />
-      </label>
+        <div className="mt-4 space-y-4">
+          <label className="block">
+            <span className="mb-2 block text-sm font-bold text-ink-900">
+              {t.checkout.meetupLabel}
+            </span>
+            <input
+              value={meetup}
+              onChange={(e) => setMeetup(e.target.value)}
+              maxLength={120}
+              placeholder={t.checkout.meetupPlaceholder}
+              className="field"
+            />
+            <span className="mt-1.5 block text-xs leading-relaxed text-gray-500">
+              {t.checkout.meetupHint}
+            </span>
+          </label>
+
+          <label className="block">
+            <span className="mb-2 block text-sm font-bold text-ink-900">
+              {t.checkout.noteLabel}
+            </span>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={3}
+              maxLength={300}
+              placeholder={t.checkout.notePlaceholder}
+              className="field resize-y"
+            />
+          </label>
+        </div>
+      </details>
 
       {error && (
         <p

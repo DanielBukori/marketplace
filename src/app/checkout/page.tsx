@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/require-user";
-import { getBusinessBySlug, getListing, getZonesForBusiness } from "@/lib/db";
+import { getBusinessBySlug, getListing, getProfile, getZonesForBusiness } from "@/lib/db";
 import CheckoutForm, { type CheckoutLine } from "@/components/CheckoutForm";
 import { isSupabaseConfigured } from "@/lib/media";
 import { getT } from "@/lib/i18n-server";
@@ -30,6 +30,7 @@ export default async function CheckoutPage({
   let lines: CheckoutLine[] = [];
   let businessId = "";
   let businessName = "";
+  let businessLocation: string | null = null;
   let deliveryFee = 0;
   let extras: MenuItem[] = [];
   let offers: Offer[] = [];
@@ -40,6 +41,7 @@ export default async function CheckoutPage({
 
     businessId = listing.business_id;
     businessName = listing.business?.name ?? t.checkout.defaultSeller;
+    businessLocation = listing.business?.location ?? null;
     lines = [
       {
         key: listing.id,
@@ -79,6 +81,7 @@ export default async function CheckoutPage({
 
     businessId = board.business.id;
     businessName = board.business.name;
+    businessLocation = board.business.location;
     deliveryFee = board.business.delivery_fee;
   }
 
@@ -97,6 +100,9 @@ export default async function CheckoutPage({
   }
 
   const zones = await getZonesForBusiness(businessId);
+  // Namba iliyothibitishwa kwenye akaunti hujaza fomu — mtu haandiki tena.
+  const profile = await getProfile(user.id).catch(() => null);
+  const savedPhone = profile?.phone ?? String(user.user_metadata?.phone ?? "");
 
   return (
     <div className="mx-auto max-w-2xl space-y-8 px-4 py-12 sm:px-6 lg:px-8">
@@ -116,7 +122,8 @@ export default async function CheckoutPage({
         businessId={businessId}
         deliveryFee={deliveryFee}
         zones={zones}
-        contact={{ email: user.email ?? "", phone: "" }}
+        contact={{ email: user.email ?? "", phone: savedPhone }}
+        pickupPoint={businessLocation}
       />
     </div>
   );
