@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useLanguage } from "@/context/LanguageContext";
 import { fill } from "@/lib/i18n";
 import { isSupabaseConfigured } from "@/lib/media";
+import { reportProblem } from "@/lib/report";
 import SetupNotice from "@/components/SetupNotice";
 
 /**
@@ -23,6 +24,11 @@ export default function ResetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function fail(raw: string) {
+    setError(raw);
+    reportProblem("reset-password", raw);
+  }
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -66,7 +72,7 @@ export default function ResetPasswordPage() {
     const hint = hintFor(raw);
     return (
       <div role="alert" className="rounded-xl bg-accent-100 px-4 py-3">
-        <p className="text-sm font-semibold text-accent-600">{hint ?? raw}</p>
+        <p className="text-sm font-semibold text-accent-600">{hint ?? t.auth.errGeneric}</p>
         {hint && process.env.NODE_ENV === "development" && (
           <p className="mt-1 font-mono text-[11px] leading-relaxed text-gray-600">{raw}</p>
         )}
@@ -86,10 +92,10 @@ export default function ResetPasswordPage() {
           redirectTo: `${base}/auth/callback?next=${encodeURIComponent("/reset-password")}`,
         },
       );
-      if (sendError) setError(sendError.message);
+      if (sendError) fail(sendError.message);
       else setStage("sent");
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      fail(err instanceof Error ? err.message : String(err));
     }
     setBusy(false);
   }
@@ -105,10 +111,10 @@ export default function ResetPasswordPage() {
     setBusy(true);
     try {
       const { error: updateError } = await createClient().auth.updateUser({ password });
-      if (updateError) setError(updateError.message);
+      if (updateError) fail(updateError.message);
       else setStage("done");
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      fail(err instanceof Error ? err.message : String(err));
     }
     setBusy(false);
   }

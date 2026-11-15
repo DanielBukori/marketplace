@@ -650,22 +650,22 @@ const sw = {
     linkErrorBody:
       "Kiungo hiki ni cha mara moja na huisha baada ya dakika chache. Omba kipya badala ya kufungua barua pepe ya zamani.",
     errRateLimit:
-      "Kikomo cha barua pepe cha Supabase kimefikwa (mailer ya default huruhusu chache kwa saa). Weka SMTP yako — README hatua (f) — kisha jaribu tena.",
-    errRedirect:
-      "Anwani ya kurudisha si kwenye orodha ya kiruhusiwa. Supabase → Authentication → URL Configuration → ongeza `/auth/callback`.",
+      "Umetuma maombi mengi kwa muda mfupi. Subiri sekunde 30 kisha ujaribu tena.",
+    errRedirect: "Kiungo hiki hakikubaliki. Anza tena kutoka ukurasa wa kuingia.",
     errPkce:
-      "Kiungo lazima kifunguliwe kwenye browser ileile kilichotuma ombi (cookies za `localhost`). Tuma kiungo kipya kwenye browser hiyo.",
-    errSignupDisabled:
-      "Usajili umezimwa kwenye mradi huu. Supabase → Authentication → Sign In / Providers → washia 'Allow new users'.",
+      "Kiungo hiki kilifunguliwa kwenye kivinjari tofauti. Fungua kwenye kivinjari kilekile, au andika namba ya uthibitisho.",
+    errSignupDisabled: "Usajili haupatikani kwa sasa. Jaribu tena baadaye.",
     errToken: "Kiungo hiki si sahihi au kimeisha muda wake. Omba kipya.",
     errBadEmail:
       "Barua pepe hii haikubaliki. Tumia anwani halisi unayoifikia, mfano jina@gmail.com au jina@iaa.ac.tz.",
     errNotConfirmed:
       "Akaunti hii haijathibitishwa bado. Fungua kiungo cha barua pepe kisha uingie tena.",
     errSmtp:
-      "Supabase ilishindwa kutuma barua pepe kupitia mailer yake. Angalia Supabase → Authentication → SMTP Settings: Brevo anahitaji **SMTP key** (si API key) na Username ya Brevo (si hostname), na Sender lazima iwe kwenye domeini uliyothibitisha — README hatua (f).",
+      "Tumekwama kukutumia barua pepe. Taarifa imetumwa kwa msimamizi — jaribu tena baadaye, au ingia kwa Google.",
     errGoogle:
-      "Google ilikataa kubadilishana code na Supabase. Kwenye Google Cloud → Google Auth Platform: (1) OAuth client iwe **Web application**, (2) `https://<project-ref>.supabase.co/auth/v1/callback` iwe kwenye **Authorized redirect URIs**, (3) Client ID na Secret kwenye Supabase viwe vilevile, (4) consent screen iwe **Published** (si Testing). Sababu kamili huonekana kwenye Supabase → Authentication → Logs.",
+      "Kuingia kwa Google hakukamilika. Jaribu tena, au tumia barua pepe na nenosiri.",
+    errGeneric:
+      "Tatizo la muda limejitokeza. Jaribu tena — taarifa imetumwa kwa msimamizi.",
     errInvalidCreds: "Barua pepe au nenosiri si sahihi. Jaribu tena.",
     errWeakPassword: "Nenosiri ni fupi. Tumia herufi 8 au zaidi.",
     errUserExists:
@@ -741,20 +741,19 @@ const sw = {
       "Nakili .env.example kuwa .env.local, kisha uweke NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY na SUPABASE_SERVICE_ROLE_KEY.",
       "Simamisha upya npm run dev (au unaishe tena kwenye seva yako).",
     ],
+    publicTitle: "Huduma haipatikani kwa sasa",
+    publicBody:
+      "Tunashughulikia tatizo la kiufundi. Jaribu tena baadaye — taarifa imetumwa kwa msimamizi.",
   },
   error: {
     title: "Seva haitujibu",
-    desc: "Ukurasa hauwezi kuonyesha data ya hifadhidata kwa sasa. Kwa kawaida huwa ni fungo za Supabase katika .env.local ambazo si za mradi ule ule, au supabase/schema.sql ambayo haijatumika bado. Angalia hivyo, kisha jaribu tena.",
-    schemaHint:
-      "Meza mpya za mfumo bado hazipo kwenye Supabase. Fungua dashboard ya Supabase → SQL Editor → bandika yaliyomo kote katika supabase/schema.sql → Run (faili hii huongeza tu vilivyokosekana, hakuna data inayofutwa), kisha jaribu tena.",
-    unreachable:
-      "Mradi wa Supabase haupatikani kwenye mtandao. Anwani ya NEXT_PUBLIC_SUPABASE_URL inaweza kuwa ya mradi uliofutwa, umesitishwa, au imeandikwa vibaya. Fungua dashboard ya Supabase: kama mradi upo, nakili Project URL na fungo lake upya kwenye .env.local kisha uwashe upya seva.",
+    desc: "Tatizo la muda limejitokeza. Jaribu tena baadaye — taarifa imetumwa kwa msimamizi.",
     noMessage: "Hakuna ujumbe wa makosa kutoka kwa seva.",
     home: "Nenda ukuranani",
   },
   notFound: {
     title: "Ukurasa haujapatikani",
-    desc: "Ukurasa huu haupo — unaweza kuwa umeondolewa, haujajengwa bado, au unahitaji kuunganishwa na hifadhidata (Supabase). Jaribu kutembelea sokoni au kuagiza chakula.",
+    desc: "Ukurasa huu haupo — unaweza kuwa umeondolewa au bado haujajengwa. Rudi sokoni uanze upya.",
   },
   news: {
     eyebrow: "Habari & Matukio",
@@ -2057,22 +2056,21 @@ const en: Dict = {
     linkErrorBody:
       "A link can be used once and expires after a few minutes. Request a new one instead of reopening the old email.",
     errRateLimit:
-      "Supabase hit its email rate limit (the built-in mailer only allows a few per hour). Configure your own SMTP — README step (f) — then try again.",
-    errRedirect:
-      "The return address is not allowlisted. Supabase → Authentication → URL Configuration → add `/auth/callback`.",
+      "You have made several requests in a short time. Wait 30 seconds, then try again.",
+    errRedirect: "That link is not accepted. Start again from the sign-in page.",
     errPkce:
-      "The link must be opened in the same browser that requested it (the `localhost` cookies). Request a new link there.",
-    errSignupDisabled:
-      "Sign-ups are switched off for this project. Supabase → Authentication → turn off 'Disable sign-ups'.",
+      "This link was opened in a different browser. Open it in the same browser, or type the confirmation number.",
+    errSignupDisabled: "Sign-up is not available right now. Try again later.",
     errToken: "That link is wrong or has expired. Request a new one.",
     errBadEmail:
       "This email address is not accepted. Use a real address you can open, e.g. name@gmail.com or name@iaa.ac.tz.",
     errNotConfirmed:
       "This account is not confirmed yet. Open the email link, then sign in again.",
     errSmtp:
-      "Supabase could not send the email through its mailer. Check Supabase → Authentication → SMTP Settings: Brevo needs the **SMTP key** (not the API key) and the Brevo Login (not the hostname), and the Sender must sit on a domain you verified — README step (f).",
-    errGoogle:
-      "Google refused to exchange the code with Supabase. In Google Cloud → Google Auth Platform: (1) the OAuth client must be a **Web application**, (2) `https://<project-ref>.supabase.co/auth/v1/callback` must be listed under **Authorized redirect URIs**, (3) the Client ID and Secret in Supabase must match exactly, (4) the consent screen must be **Published** (not Testing). The precise reason shows in Supabase → Authentication → Logs.",
+      "We could not send the email. The administrator has been notified — try again later, or sign in with Google.",
+    errGoogle: "Google sign-in did not finish. Try again, or use email and password.",
+    errGeneric:
+      "Something went wrong for a moment. Try again — the administrator has been notified.",
     errInvalidCreds: "Email or password is incorrect. Try again.",
     errWeakPassword: "That password is too short. Use 8 characters or more.",
     errUserExists:
@@ -2146,20 +2144,19 @@ const en: Dict = {
       "Copy .env.example to .env.local, then set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY.",
       "Restart npm run dev (or redeploy on your host).",
     ],
+    publicTitle: "The service is unavailable right now",
+    publicBody:
+      "We are working on a technical issue. Try again later — the administrator has been notified.",
   },
   error: {
     title: "The server did not respond",
-    desc: "This page could not load its database data. Usually the Supabase keys in .env.local are not from the same project, or supabase/schema.sql has not been run yet. Check those, then try again.",
-    schemaHint:
-      "The marketplace's newer tables are not in Supabase yet. Open the Supabase dashboard → SQL Editor → paste the full contents of supabase/schema.sql → Run (that file only adds what is missing, it deletes no data), then try again.",
-    unreachable:
-      "The Supabase project cannot be reached. The NEXT_PUBLIC_SUPABASE_URL may point to a deleted or paused project, or be mistyped. Open the Supabase dashboard: if the project still exists, copy its Project URL and keys into .env.local and restart the server.",
+    desc: "Something went wrong for a moment. Try again later — the administrator has been notified.",
     noMessage: "The server returned no error message.",
     home: "Go to the home page",
   },
   notFound: {
     title: "Page not found",
-    desc: "This page is missing — it may have been removed, not built yet, or it still needs the database (Supabase) connection. Try browsing the market or ordering food.",
+    desc: "This page is missing — it may have been removed or not built yet. Go back to the market and start again.",
   },
   news: {
     eyebrow: "News & Events",

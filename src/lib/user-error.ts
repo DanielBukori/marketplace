@@ -1,4 +1,5 @@
 import type { Dict } from "@/lib/translations";
+import { reportProblem } from "@/lib/report";
 
 type Errorish = { message?: string; code?: string } | string | null | undefined;
 
@@ -46,5 +47,6 @@ export function userError(t: Dict, error: unknown): string {
   if (process.env.NODE_ENV === "development") {
     console.warn("[makosa] nakala isiyojulikana:", message);
   }
+  reportProblem("data", message);
   return p.unknown;
 }

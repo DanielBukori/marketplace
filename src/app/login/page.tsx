@@ -1,5 +1,11 @@
 "use client";
-import { useState, useSyncExternalStore, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useState,
+  useSyncExternalStore,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -17,6 +23,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useLanguage } from "@/context/LanguageContext";
 import { fill } from "@/lib/i18n";
 import { isSupabaseConfigured } from "@/lib/media";
+import { reportProblem } from "@/lib/report";
 import SetupNotice from "@/components/SetupNotice";
 
 type Mode = "signin" | "signup";
@@ -130,6 +137,16 @@ export default function LoginPage() {
   const linkError = useQueryParam("error_description");
   const [linkErrorHidden, setLinkErrorHidden] = useState(false);
 
+  // Kosa la kiufundi huenda kwa msimamizi; screen huonyesha ujumbe mfupi tu.
+  function fail(raw: string) {
+    setError(raw);
+    reportProblem("auth", raw);
+  }
+
+  useEffect(() => {
+    if (linkError) reportProblem("auth-link", linkError);
+  }, [linkError]);
+
   // Ruga za ndani tu: `//host` ni protocol-relative na `/\host` pia
   // hugeuzwa kuwa `//host`; zote ni open redirect.
   function nextPath() {
@@ -186,7 +203,7 @@ export default function LoginPage() {
     const hint = hintFor(raw);
     return (
       <div role="alert" className="rounded-xl bg-accent-100 px-4 py-3">
-        <p className="text-sm font-semibold text-accent-600">{hint ?? raw}</p>
+        <p className="text-sm font-semibold text-accent-600">{hint ?? t.auth.errGeneric}</p>
         {hint && process.env.NODE_ENV === "development" && (
           <p className="mt-1 font-mono text-[11px] leading-relaxed text-gray-600">{raw}</p>
         )}
@@ -204,9 +221,9 @@ export default function LoginPage() {
         options: { redirectTo: redirectTo() },
       });
       // Mafanikio huondoka kwenye ukurasa, kwa hivyo makosa tu ndiyo yanaonekana hapa.
-      if (oauthError) setError(oauthError.message);
+      if (oauthError) fail(oauthError.message);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      fail(err instanceof Error ? err.message : String(err));
     }
     setBusy(false);
   }
@@ -233,13 +250,13 @@ export default function LoginPage() {
         password,
       });
       if (signInError) {
-        setError(signInError.message);
+        fail(signInError.message);
         setBusy(false);
         return;
       }
       window.location.assign(nextPath());
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      fail(err instanceof Error ? err.message : String(err));
       setBusy(false);
     }
   }
@@ -272,7 +289,7 @@ export default function LoginPage() {
         },
       });
       if (signUpError) {
-        setError(signUpError.message);
+        fail(signUpError.message);
         setBusy(false);
         return;
       }
@@ -292,7 +309,7 @@ export default function LoginPage() {
       setCode("");
       setStep("confirm");
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      fail(err instanceof Error ? err.message : String(err));
     }
     setBusy(false);
   }
@@ -311,7 +328,7 @@ export default function LoginPage() {
       if (resendError) setError(resendError.message);
       else setResent(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      fail(err instanceof Error ? err.message : String(err));
     }
     setBusy(false);
   }
@@ -336,7 +353,7 @@ export default function LoginPage() {
       }
       window.location.assign(nextPath());
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      fail(err instanceof Error ? err.message : String(err));
       setCodeBusy(false);
     }
   }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { useLanguage } from "@/context/LanguageContext";
+import { reportProblem } from "@/lib/report";
 
 export default function AppError({
   error,
@@ -13,32 +14,22 @@ export default function AppError({
 }) {
   const { t } = useLanguage();
 
+  // Maelezo ya kiufundi huenda kwa msimamizi; mtumiaji haoni API/backend.
   useEffect(() => {
     console.error(error);
-  }, [error]);
-
-  // Meza au safu isiyoipo ni dalili moja tu: schema mpya bado haijawekwa.
-  // Kwa hivyo toa maelekezo ya vitende kufanya badala ya kuonyesha kosa gumu.
-  const schemaMissing =
-    error.message.includes("42703") || error.message.includes("PGRST205");
-  // Mradi uliofutwa au NEXT_PUBLIC_SUPABASE_URL yenye kosa huleta
-  // ENOTFOUND/fetch failed — hii si kosa la schema, ni la mipangilio.
-  const unreachable = /fetch failed|enotfound|econnrefused|getaddrinfo|network/i.test(
-    error.message,
-  );
+    reportProblem(
+      "page",
+      error.message || t.error.noMessage,
+      `digest=${error.digest ?? "-"}\n${error.stack?.slice(0, 600) ?? ""}`,
+    );
+  }, [error, t.error.noMessage]);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-20 text-center sm:px-6 lg:px-8">
       <h1 className="text-2xl font-extrabold tracking-tight text-ink-900">
         {t.error.title}
       </h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-gray-500">
-        {unreachable
-          ? t.error.unreachable
-          : schemaMissing
-            ? t.error.schemaHint
-            : t.error.desc}
-      </p>
+      <p className="mt-3 text-[15px] leading-relaxed text-gray-500">{t.error.desc}</p>
 
       {process.env.NODE_ENV === "development" && (
         <p className="mx-auto mt-5 max-w-xl break-words rounded-2xl bg-white px-5 py-4 text-left font-mono text-xs text-gray-600 shadow-sm">

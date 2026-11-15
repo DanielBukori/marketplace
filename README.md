@@ -600,11 +600,14 @@ unaonyesha tu kilichopo kwenye hifadhidata.
 | Brevo: `535 authentication failed` baada ya Save | Uliweka **API key** kwenye Password badala ya **SMTP key**, au ulitumia `smtp-relay.brevo.com` kama Username badala ya **Login** | Ona hatua (f) → "Makosa mawili ya Brevo"; tengeneza SMTP key mpya |
 | Brevo: `550 Domain is not verified` | Sender Email iko kwenye domeini ambayo huna (mf. `@gmail.com`) au haijathibitishwa | Thibitisha domeini yako kwenye Brevo, au tumia Gmail app password kama hatua (f) → "Ukiwa huna domeini" |
 | `PKCE code verifier not found in storage` | Kiungo cha kurejesha nenosiri au cha Google kilifunguliwa kwenye browser/device tofauti na ile iliyoomba, au cookies zimefutwa | Fungua kiungo kwenye browser ileile uliyotumia kuomba; kama haiwezekani, omba kiungo kipya hapo |
+| Brevo: `403 api key is not authorized for resource "transactional.email"` | Kitufe cha API kimeundwa bila ruhusa ya kutuma barua pepe (Brevo huniacha kuchagua ruhusa wakati wa kuunda key) | Brevo → Settings → SMTP & API → **API Keys** → unda key mpya na uweke ruhusa ya **Transactional email** (au Full access), kisha badilisha `BREVO_API_KEY` kwenye `.env.local` na Vercel |
+| Barua pepe ya taarifa (kosa la kiufundi) haiji kwa admin | `BREVO_API_KEY` haina ruhusa ya transactional, au `ADMIN_ALERT_EMAIL`/`NOTIFY_EMAIL_FROM` haipo | Taarifa huandikwa kwenye logs (`[tatizo]`, `[admin-alert]`) hata bila Brevo; rekebisha key kama safu iliyo juu |
 | `WebCrypto API is not supported. Code challenge method will default to use plain instead of sha256` (browser) | Unafungua tovuti kutoka anwani isiyo secure — `crypto.subtle` haipatikani nje ya `https://` na `http://localhost`/`127.0.0.1`, mf. `http://192.168.x.x:3000` | Onyo tu, si kosa: huingia kwa barua pepe na nenosiri bila athari. Ukipenda kuona safi tumia `http://localhost:3000`, au upatie HTTPS (tunnel ya mf. `cloudflared`) na usasishe `NEXT_PUBLIC_SITE_URL` |
 | `supabase.auth.signInWithOauth is not a function` (browser) | Kibadili-haraka (Fast Refresh) kiliacha bundle ya zamani baada ya mabadiliko ya `translations.ts` | Pakia upya kwa nguvu: `Shift+F5` kwenye `/login` |
 
-Ukosa wowote wa hifadhidata huonyeshwa na `src/app/error.tsx`: ujumbe wa kweli (SW/EN)
-pamoja na ujumbe uliotoka kwa seva, badala ya ukurasa kuanguka.
+Ukosa wowote wa hifadhidata huonyeshwa na `src/app/error.tsx`: mtumiaji huona ujumbe
+mfupi wa Kiswahili/EN, na maelezo ya kiufundi hutumwa kwa `ADMIN_ALERT_EMAIL`
+(bila hiyo, kwa `NOTIFY_EMAIL_FROM`) kupitia `/api/report`.
 
 ---
 
